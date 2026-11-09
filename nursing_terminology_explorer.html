@@ -268,6 +268,19 @@ table.data th{font-weight:700;color:var(--accent-text);background:var(--surface-
 .vs>div{padding:14px;border-radius:12px;border:1px solid var(--border);background:var(--surface-2)}
 .vs ul{margin:6px 0 0;padding-left:18px;font-size:.9rem}
 
+/* ---------- Verification mission ---------- */
+.v-guide{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:10px;margin-top:10px}
+.v-guide>div{padding:12px;border-radius:12px;background:var(--surface-2);border:1px solid var(--border);font-size:.86rem}
+.v-guide ol{margin:6px 0 0;padding-left:18px}
+.v-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:10px;margin-top:12px}
+.v-task{border:1px solid var(--border);border-left:4px solid var(--warn);border-radius:12px;padding:12px;background:var(--surface)}
+.v-task.st-match{border-left-color:var(--ok)} .v-task.st-mismatch{border-left-color:var(--danger)} .v-task.st-notfound{border-left-color:var(--muted)}
+.v-task .app-val{font-size:.9rem;padding:6px 8px;border-radius:8px;background:var(--surface-2);border:1px dashed var(--border-strong);margin:6px 0;word-break:break-word}
+.v-task .st-row{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0}
+.v-task input[type=text]{padding:7px 10px;font-size:.86rem;margin-top:4px}
+.v-done{font-size:.78rem;font-weight:700}
+.v-summary{display:flex;flex-wrap:wrap;gap:8px;margin-top:6px}
+
 /* ---------- Admin ---------- */
 .admin-only{display:none!important}
 body.instructor .admin-only{display:inline-flex!important}
@@ -344,6 +357,7 @@ legend{padding:0 6px;font-weight:700;font-size:.88rem}
   <button class="tab" role="tab" id="tab-records" aria-controls="panel-records" aria-selected="false" tabindex="-1">📝 간호기록 코딩</button>
   <button class="tab" role="tab" id="tab-quiz" aria-controls="panel-quiz" aria-selected="false" tabindex="-1">🎯 퀴즈</button>
   <button class="tab" role="tab" id="tab-overview" aria-controls="panel-overview" aria-selected="false" tabindex="-1">📚 표준용어 개요</button>
+  <button class="tab" role="tab" id="tab-verify" aria-controls="panel-verify" aria-selected="false" tabindex="-1">🔎 검증 미션</button>
   <button class="tab admin-tab" role="tab" id="tab-admin" aria-controls="panel-admin" aria-selected="false" tabindex="-1" hidden>🛠 교수자</button>
 </nav>
 
@@ -442,6 +456,15 @@ legend{padding:0 6px;font-weight:700;font-size:.88rem}
     <div id="overviewBox"></div>
   </section>
 
+  <!-- 6-2. Verification mission -->
+  <section id="panel-verify" role="tabpanel" aria-labelledby="tab-verify" tabindex="0" hidden>
+    <div class="panel-head">
+      <div><h2>검증 미션 <span class="muted small">학생이 직접 공식 원본과 대조하기</span></h2>
+      <p>앱의 KCD-9 명칭·장·블록과 ICNP 제안 개념명은 <b>검증 전 학습용 제안값</b>입니다. 공식 원본을 찾아 대조하고, 결과를 파일로 내보내 제출하세요.</p></div>
+    </div>
+    <div id="verifyBox"></div>
+  </section>
+
   <!-- 7. Admin -->
   <section id="panel-admin" role="tabpanel" aria-labelledby="tab-admin" tabindex="0" hidden>
     <div class="panel-head">
@@ -531,7 +554,7 @@ const Store = (() => {
     }
   };
 })();
-const KEYS = { data:'nte.data.v1', progress:'nte.progress.v1', quiz:'nte.quiz.v1', pin:'nte.pin.v1', theme:'nte.theme.v1', tab:'nte.tab.v1' };
+const KEYS = { verify:'nte.verify.v1', vsubs:'nte.vsubs.v1', data:'nte.data.v1', progress:'nte.progress.v1', quiz:'nte.quiz.v1', pin:'nte.pin.v1', theme:'nte.theme.v1', tab:'nte.tab.v1' };
 
 function toast(msg){
   const t = $('#toast'); t.textContent = msg; t.classList.add('show');
@@ -619,7 +642,7 @@ function searchConcepts(q){
 /* =========================================================
    Progress
    ========================================================= */
-const TAB_IDS = ['rosetta','hierarchy','interop','records','quiz','overview'];
+const TAB_IDS = ['rosetta','hierarchy','interop','records','quiz','overview','verify'];
 let progress = Object.assign({ tabs:{}, viewed:{}, interop:false, records:{}, quiz:false }, Store.get(KEYS.progress, {}) || {});
 ['tabs','viewed','records'].forEach(k => { if (!progress[k] || typeof progress[k] !== 'object') progress[k] = {}; });
 function saveProgress(){ Store.set(KEYS.progress, progress); renderProgress(); }
@@ -630,7 +653,8 @@ function progressItems(){
     { label:`개념 10개 이상 살펴보기 (${Math.min(viewedN,10)}/10)`, done: viewedN >= 10 },
     { label:'상호운용성 매핑 완성', done: !!progress.interop },
     ...RECORDS.map(r => ({ label:`간호기록 ${r.id}: ${r.title}`, done: !!progress.records[r.id] })),
-    { label:'퀴즈 1회 이상 완료', done: !!progress.quiz }
+    { label:'퀴즈 1회 이상 완료', done: !!progress.quiz },
+    { label:'검증 미션 5건 이상 판정', done: !!progress.verify }
   ];
 }
 function renderProgress(){
@@ -1321,6 +1345,207 @@ function renderOverview(){
 renderers.overview = renderOverview;
 
 /* =========================================================
+   6-2. Verification mission (학생 직접 검증)
+   ========================================================= */
+const V_TYPES = {
+  kcd_name:   { label:'KCD-9 한글 명칭', std:'kcd9', field:'kcd9.name',
+                how:'통계분류포털에서 KCD-9을 선택하고 코드(예: E11)로 검색해, 공식 한글 명칭을 띄어쓰기까지 그대로 옮겨 적으세요.' },
+  kcd_chapter:{ label:'KCD-9 장(章)', std:'kcd9', field:'kcd9.chapter',
+                how:'해당 코드가 속한 장의 로마숫자 번호와 장 제목을 확인하세요(예: IV 내분비, 영양 및 대사 질환).' },
+  kcd_block:  { label:'KCD-9 블록', std:'kcd9', field:'kcd9.block',
+                how:'해당 코드가 속한 블록의 코드 범위와 제목을 확인하세요(예: E10–E14 당뇨병).' },
+  icnp_name:  { label:'ICNP 공식 용어', std:'icnp', field:'icnp.name',
+                how:'ICN의 ICNP 브라우저에서 제안 개념명에 해당하는 용어가 있는지 찾고, 공식 용어(영문)와 진단/결과·중재 구분을 기록하세요. 코드를 찾았다면 메모에 적으세요.' }
+};
+const V_SOURCES = {
+  kcd9:[ { name:'국가데이터처 통계분류포털 (KCD)', url:'https://kssc.kostat.go.kr' }, { name:'국가데이터처', url:'https://www.mods.go.kr' } ],
+  icnp:[ { name:'국제간호협의회(ICN) — ICNP', url:'https://www.icn.ch' } ]
+};
+const V_STATUS = { match:'✓ 일치', mismatch:'✗ 불일치', notfound:'? 찾지 못함' };
+function getPath(o, path){ return path.split('.').reduce((a,k)=>a==null?a:a[k], o); }
+function setPath(o, path, v){ const ks = path.split('.'); const last = ks.pop(); ks.reduce((a,k)=>a[k], o)[last] = v; }
+function buildVTasks(){
+  const out = [];
+  DATA.forEach(c => {
+    if (c.kcd9.code) ['kcd_name','kcd_chapter','kcd_block'].forEach(t => out.push({ id:`${c.id}.${t}`, cid:c.id, type:t }));
+    out.push({ id:`${c.id}.icnp_name`, cid:c.id, type:'icnp_name' });
+  });
+  return out;
+}
+function vAppValue(c, type){
+  if (type === 'icnp_name') return c.icnp.name || c.icnp.suggested_name || '';
+  return getPath(c, V_TYPES[type].field) || '';
+}
+let vState = Object.assign({ student:'', results:{}, assigned:null }, Store.get(KEYS.verify, {}) || {});
+if (!vState.results || typeof vState.results !== 'object') vState.results = {};
+if (vState.assigned && !Array.isArray(vState.assigned)) vState.assigned = null;
+const VF = { type:'all', status:'all' };
+function saveV(){ Store.set(KEYS.verify, vState); }
+function vDoneCount(){ return Object.values(vState.results).filter(r => r && r.status).length; }
+function vTaskCard(t){
+  const c = getConcept(t.cid); if (!c) return '';
+  const m = V_TYPES[t.type]; const r = vState.results[t.id] || {};
+  const app = vAppValue(c, t.type);
+  const ctx = m.std === 'kcd9' ? `KCD 코드 <code>${esc(c.kcd9.code)}</code>` : `ICNP 제안 개념명 (${esc(c.concept_ko)})`;
+  const needVal = r.status === 'mismatch' && !String(r.value||'').trim();
+  return `<article class="v-task ${r.status ? 'st-'+r.status : ''}" data-task="${esc(t.id)}" aria-label="${esc(c.concept_ko)} ${esc(m.label)} 검증 과제">
+    <div class="row"><b>${esc(c.concept_ko)}</b><span class="std ${m.std}">${esc(m.label)}</span><span class="spacer"></span>${r.status ? `<span class="v-done">${V_STATUS[r.status]}</span>` : '<span class="v-done muted">미완료</span>'}</div>
+    <div class="small muted">${ctx}</div>
+    <div class="app-val"><span class="small muted">앱 제안값(검증 전):</span><br>${app ? esc(app) : '<i class="muted">값 없음</i>'}</div>
+    <details class="small"><summary>확인 방법 · 공식 원본</summary><p>${esc(m.how)}</p><p>${V_SOURCES[m.std].map(s => `<a href="${s.url}" target="_blank" rel="noopener">${esc(s.name)}</a>`).join(' · ')}</p></details>
+    <div class="st-row" role="group" aria-label="판정">${Object.keys(V_STATUS).map(s => `<button type="button" class="chip" data-vst="${s}" aria-pressed="${r.status===s}">${V_STATUS[s]}</button>`).join('')}</div>
+    ${r.status === 'mismatch' || r.status === 'match' && t.type === 'icnp_name' ? `<label class="sr-only" for="vv-${esc(t.id)}">공식 원본의 올바른 값</label><input type="text" id="vv-${esc(t.id)}" data-vf="value" value="${esc(r.value||'')}" placeholder="${r.status==='mismatch' ? '공식 원본의 올바른 값 (필수)' : 'ICNP 공식 용어(영문)'}">` : ''}
+    ${r.status === 'mismatch' ? `<p class="small v-warn" style="color:var(--danger);margin:4px 0 0" ${needVal?'':'hidden'}>불일치라면 올바른 값을 적어 주세요.</p>` : ''}
+    ${r.status ? `<label class="sr-only" for="vs-${esc(t.id)}">근거</label><input type="text" id="vs-${esc(t.id)}" data-vf="source" value="${esc(r.source||'')}" placeholder="근거: 출처·화면·버전 (예: 통계분류포털 KCD-9 E11)">
+      <label class="sr-only" for="vn-${esc(t.id)}">메모</label><input type="text" id="vn-${esc(t.id)}" data-vf="note" value="${esc(r.note||'')}" placeholder="메모 (선택)">` : ''}
+  </article>`;
+}
+function vVisibleTasks(){
+  let tasks = buildVTasks();
+  if (vState.assigned) { const set = new Set(vState.assigned); tasks = tasks.filter(t => set.has(t.id)); }
+  if (VF.type !== 'all') tasks = tasks.filter(t => t.type === VF.type);
+  if (VF.status === 'todo') tasks = tasks.filter(t => !(vState.results[t.id] && vState.results[t.id].status));
+  if (VF.status === 'done') tasks = tasks.filter(t => vState.results[t.id] && vState.results[t.id].status);
+  return tasks;
+}
+function vSummaryHTML(){
+  const all = buildVTasks();
+  const scope = vState.assigned ? all.filter(t => vState.assigned.includes(t.id)) : all;
+  const cnt = s => scope.filter(t => vState.results[t.id] && vState.results[t.id].status === s).length;
+  const done = scope.filter(t => vState.results[t.id] && vState.results[t.id].status).length;
+  return `<span class="chip">${vState.assigned ? '배정 과제' : '전체 과제'} ${done}/${scope.length} 완료</span>
+    <span class="chip">✓ 일치 ${cnt('match')}</span><span class="chip">✗ 불일치 ${cnt('mismatch')}</span><span class="chip">? 찾지 못함 ${cnt('notfound')}</span>`;
+}
+function renderVerify(){
+  const tasks = vVisibleTasks();
+  $('#verifyBox').innerHTML = `
+  <div class="card"><h3>진행 방법</h3>
+    <div class="v-guide">
+      <div><b>① 과제 고르기</b><ol><li>“무작위 5개 배정”으로 과제를 받거나 전체 목록에서 고릅니다.</li><li>앱 제안값을 먼저 읽습니다.</li></ol></div>
+      <div><b>② 공식 원본과 대조</b><ol><li>각 카드의 “확인 방법 · 공식 원본”을 펼쳐 원본을 엽니다.</li><li>일치·불일치·찾지 못함 중 하나로 판정합니다.</li><li>불일치면 원본의 올바른 값을 그대로 적습니다.</li></ol></div>
+      <div><b>③ 근거 남기고 제출</b><ol><li>근거 칸에 출처·화면·버전을 적습니다.</li><li>JSON 또는 CSV로 내보내 교수자에게 제출합니다.</li></ol></div>
+    </div>
+    <p class="insight small">⚖️ <b>원칙</b>: 블로그·요약 자료·AI 답변이 아니라 <b>관리기관의 공식 원본</b>에서 확인합니다. 찾지 못했다면 추측하지 말고 “찾지 못함”으로 남기세요. 그것도 정직한 검증 결과입니다.</p>
+  </div>
+  <div class="card">
+    <div class="form-grid">
+      <div><label for="vStudent">제출자 (학번 또는 이름, 선택)</label><input id="vStudent" type="text" value="${esc(vState.student)}" autocomplete="off"></div>
+      <div><label for="vType">과제 유형</label><select id="vType"><option value="all">전체</option>${Object.keys(V_TYPES).map(k=>`<option value="${k}" ${VF.type===k?'selected':''}>${esc(V_TYPES[k].label)}</option>`).join('')}</select></div>
+      <div><label for="vStatus">진행 상태</label><select id="vStatus"><option value="all">전체</option><option value="todo" ${VF.status==='todo'?'selected':''}>미완료</option><option value="done" ${VF.status==='done'?'selected':''}>완료</option></select></div>
+    </div>
+    <div class="row" style="margin-top:10px">
+      <button type="button" class="btn primary" id="vAssign">🎲 무작위 5개 배정</button>
+      <button type="button" class="btn" id="vAll" ${vState.assigned?'':'disabled'}>전체 과제 보기</button>
+      <span class="spacer"></span>
+      <button type="button" class="btn" id="vExportJson">⬇ JSON 제출 파일</button>
+      <button type="button" class="btn" id="vExportCsv">⬇ CSV (엑셀)</button>
+      <button type="button" class="btn sm danger" id="vClear">기록 초기화</button>
+    </div>
+    <div class="v-summary" aria-live="polite">${vSummaryHTML()}</div>
+  </div>
+  <div class="v-list" id="vList">${tasks.map(vTaskCard).join('') || '<p class="muted">조건에 맞는 과제가 없습니다.</p>'}</div>`;
+}
+renderers.verify = renderVerify;
+function vRerenderCard(id){
+  const old = $(`#vList [data-task="${CSS.escape(id)}"]`); const t = buildVTasks().find(x => x.id === id);
+  if (old && t) old.outerHTML = vTaskCard(t);
+}
+function vRows(){
+  return buildVTasks().filter(t => vState.results[t.id] && vState.results[t.id].status).map(t => {
+    const c = getConcept(t.cid), r = vState.results[t.id];
+    return { task_id:t.id, concept_id:t.cid, concept_ko:c.concept_ko, item:V_TYPES[t.type].label, kcd_code:c.kcd9.code||'',
+      app_value:vAppValue(c,t.type), status:r.status, value:r.value||'', source:r.source||'', note:r.note||'', updated:r.ts||'' };
+  });
+}
+function downloadText(filename, text, mime){
+  try {
+    const blob = new Blob([text], { type:mime });
+    const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = filename;
+    document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 500);
+    return true;
+  } catch(err){ toast('파일 저장에 실패했습니다: ' + err.message); return false; }
+}
+function vFileBase(){ const who = (vState.student||'student').replace(/[^\w가-힣-]/g,'_').slice(0,30); return `verification_${who}_${new Date().toISOString().slice(0,10)}`; }
+$('#verifyBox').addEventListener('click', e => {
+  const b = e.target.closest('button'); if (!b) return;
+  if (b.dataset.vst){
+    const id = b.closest('[data-task]').dataset.task;
+    const r = vState.results[id] ||= {};
+    r.status = r.status === b.dataset.vst ? '' : b.dataset.vst; r.ts = new Date().toISOString();
+    if (!r.status) delete vState.results[id];
+    saveV(); vRerenderCard(id);
+    const card = $(`#vList [data-task="${CSS.escape(id)}"]`);
+    const focusEl = card && ($('input[data-vf="value"]', card) || $(`[data-vst="${b.dataset.vst}"]`, card)); if (focusEl) focusEl.focus();
+    if (vDoneCount() >= 5 && !progress.verify){ progress.verify = true; saveProgress(); toast('🎉 검증 미션 5건 달성!'); }
+    const sum = $('#verifyBox .v-summary'); if (sum) sum.innerHTML = vSummaryHTML();
+    return;
+  }
+  if (b.id === 'vAssign'){
+    const pool = buildVTasks();
+    const todo = pool.filter(t => !(vState.results[t.id] && vState.results[t.id].status));
+    vState.assigned = shuffle(todo.length >= 5 ? todo : pool).slice(0,5).map(t => t.id); saveV(); renderVerify(); toast('과제 5개를 배정했습니다'); return;
+  }
+  if (b.id === 'vAll'){ vState.assigned = null; saveV(); renderVerify(); return; }
+  if (b.id === 'vClear'){ if (!window.confirm('검증 미션 기록을 모두 지울까요?')) return; vState = { student:vState.student, results:{}, assigned:null }; saveV(); renderVerify(); return; }
+  if (b.id === 'vExportJson' || b.id === 'vExportCsv'){
+    const rows = vRows();
+    if (!rows.length){ toast('판정한 과제가 없습니다'); return; }
+    const miss = rows.filter(r => r.status === 'mismatch' && !r.value.trim()).length;
+    if (miss && !window.confirm(`불일치인데 올바른 값이 비어 있는 과제가 ${miss}개 있습니다. 그래도 내보낼까요?`)) return;
+    if (b.id === 'vExportJson'){
+      const payload = { type:'nte-verification', schema:1, app:'Nursing Terminology Explorer', student:vState.student, exported_at:new Date().toISOString(), results:rows };
+      if (downloadText(vFileBase()+'.json', JSON.stringify(payload, null, 2), 'application/json')) toast('제출용 JSON을 저장했습니다');
+    } else {
+      const head = ['task_id','concept_id','개념','항목','KCD코드','앱 제안값','판정','올바른 값','근거','메모','수정시각'];
+      const q = v => `"${String(v).replace(/"/g,'""')}"`;
+      const lines = [head.map(q).join(',')].concat(rows.map(r => [r.task_id,r.concept_id,r.concept_ko,r.item,r.kcd_code,r.app_value,V_STATUS[r.status],r.value,r.source,r.note,r.updated].map(q).join(',')));
+      if (downloadText(vFileBase()+'.csv', '﻿' + lines.join('\r\n'), 'text/csv;charset=utf-8')) toast('CSV를 저장했습니다');
+    }
+  }
+});
+$('#verifyBox').addEventListener('change', e => {
+  const el = e.target;
+  if (el.id === 'vStudent'){ vState.student = el.value.trim(); saveV(); return; }
+  if (el.id === 'vType'){ VF.type = el.value; renderVerify(); return; }
+  if (el.id === 'vStatus'){ VF.status = el.value; renderVerify(); return; }
+  if (el.dataset.vf){
+    const id = el.closest('[data-task]').dataset.task; const r = vState.results[id]; if (!r) return;
+    r[el.dataset.vf] = el.value.trim(); r.ts = new Date().toISOString(); saveV();
+    if (el.dataset.vf === 'value'){ const w = $('.v-warn', el.closest('[data-task]')); if (w) w.hidden = !!el.value.trim(); }
+  }
+});
+
+/* ---------- 교수자: 학생 검증 결과 집계 ---------- */
+let vSubs = Store.get(KEYS.vsubs, []); if (!Array.isArray(vSubs)) vSubs = [];
+function vAggregateHTML(){
+  if (!vSubs.length) return '<p class="small muted">아직 불러온 학생 제출 파일이 없습니다.</p>';
+  const agg = {};
+  vSubs.forEach(sub => (sub.results||[]).forEach(r => {
+    const a = agg[r.task_id] ||= { r, match:0, notfound:0, mismatch:{}, sources:[] };
+    if (r.status === 'match') a.match++;
+    else if (r.status === 'notfound') a.notfound++;
+    else if (r.status === 'mismatch' && r.value){ a.mismatch[r.value] = (a.mismatch[r.value]||0) + 1; }
+    if (r.source) a.sources.push(`${sub.student||'익명'}: ${r.source}`);
+  }));
+  const tids = Object.keys(agg).sort();
+  return `<p class="small muted">제출 ${vSubs.length}건 (${vSubs.map(s=>esc(s.student||'익명')).join(', ')}) · 과제 ${tids.length}개. <b>적용</b>은 해당 텍스트 필드만 바꾸며 verified 상태는 바꾸지 않습니다.</p>
+  <div class="table-scroll" style="margin-top:8px;max-height:460px"><table class="data"><thead><tr><th>과제</th><th>현재 앱 값</th><th>일치</th><th>불일치 제안값 (응답 수)</th><th>못 찾음</th><th>근거</th></tr></thead><tbody>
+  ${tids.map(id => { const a = agg[id]; const [cid, type] = id.split('.'); const c = getConcept(cid); const m = V_TYPES[type];
+    if (!c || !m) return '';
+    const cur = vAppValue(c, type);
+    return `<tr><td>${esc(c.concept_ko)}<div class="small muted">${esc(m.label)}${c.kcd9.code?' · '+esc(c.kcd9.code):''}</div></td><td class="small">${esc(cur)}</td><td>${a.match}</td>
+      <td>${Object.entries(a.mismatch).sort((x,y)=>y[1]-x[1]).map(([v,n]) => `<div style="margin-bottom:4px">${esc(v)} <b>(${n})</b> <button type="button" class="btn sm" data-vapply="${esc(id)}" data-val="${esc(v)}">적용</button></div>`).join('') || '—'}</td>
+      <td>${a.notfound}</td><td class="small">${a.sources.slice(0,4).map(esc).join('<br>')}${a.sources.length>4?'<br>…':''}</td></tr>`; }).join('')}
+  </tbody></table></div>`;
+}
+function vApply(id, val){
+  const [cid, type] = id.split('.'); const c = DATA.find(x => x.id === cid); const m = V_TYPES[type];
+  if (!c || !m) { toast('대상 개념을 찾을 수 없습니다'); return; }
+  if (!window.confirm(`${c.concept_ko} · ${m.label}\n“${vAppValue(c,type)}” → “${val}”\n공식 원본을 직접 확인하셨나요? 적용할까요?`)) return;
+  setPath(c, m.field, val); saveData(); renderAdmin(); toast('적용했습니다 (verified 상태는 변경되지 않음)');
+}
+
+/* =========================================================
    7. Instructor mode
    ========================================================= */
 const getPin = () => { const p = Store.get(KEYS.pin, '0000'); return (typeof p === 'string' && /^\d{4,8}$/.test(p)) ? p : '0000'; };
@@ -1373,6 +1598,10 @@ function renderAdmin(){
       <td><span class="vbadge ${verifyCount(c)===5?'ver':'unv'}">${verifyCount(c)}/5</span></td>
       <td><button type="button" class="btn sm" data-edit="${esc(c.id)}" aria-label="${esc(c.concept_ko)} 편집">편집</button></td></tr>`).join('')}
   </tbody></table></div></div>
+  <div class="card"><h3>🔎 학생 검증 미션 결과 집계</h3>
+    <div class="row" style="margin-top:8px"><label class="btn" for="adVImport" style="margin:0;color:inherit;font-size:.9rem">⬆ 학생 제출 JSON 불러오기 (여러 개 선택 가능)</label><input type="file" id="adVImport" accept=".json,application/json" multiple class="sr-only">
+    <button type="button" class="btn sm danger" id="adVClear" ${vSubs.length?'':'disabled'}>집계 초기화</button></div>
+    <div style="margin-top:8px">${vAggregateHTML()}</div></div>
   <div class="card"><h3>⚠ 검증이 필요한 코드 (${unv.length})</h3><p class="small muted">코드는 있으나 verified:false인 항목입니다. 공식 원본으로 확인 후 편집 화면에서 체크하세요.</p>
     <div class="table-scroll" style="margin-top:8px;max-height:360px"><table class="data"><thead><tr><th>ID</th><th>개념</th><th>표준</th><th>코드</th><th>명칭</th></tr></thead><tbody>
     ${unv.map(x => `<tr><td class="mono">${esc(x.c.id)}</td><td>${esc(x.c.concept_ko)}</td><td><span class="std ${x.k}">${STANDARDS[x.k].label}</span></td><td class="mono">${esc(x.code)}</td><td class="small">${esc(x.k==='snomed' ? (x.c.snomed.fsn||x.c.snomed.pt) : x.c[x.k].name)}</td></tr>`).join('') || '<tr><td colspan="5">모두 검증되었습니다.</td></tr>'}
@@ -1458,6 +1687,8 @@ $('#adminBox').addEventListener('click', e => {
   const t = e.target.closest('button'); if (!t || !instructor) return;
   if (t.dataset.edit) return openEditor(t.dataset.edit);
   if (t.id === 'adAdd') return openEditor(null);
+  if (t.dataset.vapply) return vApply(t.dataset.vapply, t.dataset.val);
+  if (t.id === 'adVClear'){ if (!window.confirm('불러온 학생 제출 집계를 지울까요?')) return; vSubs = []; Store.set(KEYS.vsubs, vSubs); renderAdmin(); return; }
   if (t.id === 'adExport'){
     const payload = { app:'Nursing Terminology Explorer', schema:1, exported_at:new Date().toISOString(), note:'교육용 데이터. 실제 의무기록·청구에는 공식 원본 사용', data:DATA };
     try {
@@ -1486,6 +1717,19 @@ $('#adminBox').addEventListener('click', e => {
   }
 });
 $('#adminBox').addEventListener('change', e => {
+  if (e.target.id === 'adVImport' && e.target.files && e.target.files.length){
+    const files = Array.from(e.target.files); let ok = 0, bad = 0, left = files.length;
+    files.forEach(f => { const rd = new FileReader();
+      rd.onload = () => { try { const p = JSON.parse(String(rd.result));
+          if (!p || p.type !== 'nte-verification' || !Array.isArray(p.results)) throw new Error('형식 오류');
+          const results = p.results.filter(r => r && typeof r.task_id === 'string' && V_STATUS[r.status]).map(r => ({ task_id:r.task_id, status:r.status, value:String(r.value||''), source:String(r.source||''), note:String(r.note||'') }));
+          vSubs.push({ student:String(p.student||f.name), file:f.name, results }); ok++;
+        } catch(err){ bad++; }
+        if (--left === 0){ Store.set(KEYS.vsubs, vSubs); renderAdmin(); toast(`제출 ${ok}건 불러옴${bad?` · 실패 ${bad}건`:''}`); } };
+      rd.onerror = () => { bad++; if (--left === 0){ Store.set(KEYS.vsubs, vSubs); renderAdmin(); toast(`제출 ${ok}건 불러옴 · 실패 ${bad}건`); } };
+      rd.readAsText(f); });
+    e.target.value = ''; return;
+  }
   if (e.target.id !== 'adImport' || !e.target.files || !e.target.files[0]) return;
   const file = e.target.files[0];
   const reader = new FileReader();
