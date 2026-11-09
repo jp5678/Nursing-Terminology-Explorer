@@ -11,17 +11,17 @@
 <style>
 /* =========================================================
    Clean Medical Design System
-   주색: 딥 그린 #0F5B46 · 서체: IBM Plex Sans KR / IBM Plex Mono
+   주색: 딥 블루 #1E3A8A · 서체: IBM Plex Sans KR / IBM Plex Mono
    ========================================================= */
 :root{
-  --primary:#0F5B46; --primary-hover:#0B4636; --primary-soft:#E8F1EC; --primary-line:#B9D3C6;
-  --accent-text:#0F5B46; --on-primary:#FFFFFF;
-  --bg:#F6F7F6; --bg2:#FFFFFF; --surface:#FFFFFF; --surface-2:#F3F5F4;
-  --border:#E3E7E5; --border-strong:#C9D1CD;
+  --primary:#1E3A8A; --primary-hover:#172D6B; --primary-soft:#EAF0FB; --primary-line:#BFCDEB;
+  --accent-text:#1E3A8A; --on-primary:#FFFFFF;
+  --bg:#F5F7FA; --bg2:#FFFFFF; --surface:#FFFFFF; --surface-2:#F2F4F8;
+  --border:#E2E6EE; --border-strong:#C7CFDD;
   --text:#1F2937; --muted:#6B7280;
   --ok:#0F7A4F; --warn:#B45309; --danger:#B42318; --gold:#B45309;
   --ok-bg:#E9F5EE; --warn-bg:#FDF4E7; --danger-bg:#FCEDEC;
-  --b-kcd:#2557A7; --b-icd10:#4A4BA6; --b-icd11:#7A3E9D; --b-snomed:#9C4A12; --b-icnp:#A1336A;
+  --b-kcd:#0E7470; --b-icd10:#4A4BA6; --b-icd11:#7A3E9D; --b-snomed:#9C4A12; --b-icnp:#A1336A;
   --shadow:0 1px 2px rgba(16,24,40,.05);
   --shadow-lg:0 12px 32px rgba(16,24,40,.14);
   --radius:12px; --radius-sm:8px;
@@ -32,14 +32,14 @@
   color-scheme:light;
 }
 [data-theme="dark"]{
-  --primary:#3FA584; --primary-hover:#5BB896; --primary-soft:#16261F; --primary-line:#2C4A3D;
-  --accent-text:#6CC4A4; --on-primary:#0B1512;
-  --bg:#111514; --bg2:#181D1B; --surface:#181D1B; --surface-2:#1F2522;
-  --border:#2A322E; --border-strong:#3A4540;
-  --text:#E5E9E7; --muted:#9AA5A0;
+  --primary:#6E93E6; --primary-hover:#8AA8EE; --primary-soft:#172238; --primary-line:#2D3E63;
+  --accent-text:#93B1F2; --on-primary:#0B1220;
+  --bg:#0F131A; --bg2:#161B24; --surface:#161B24; --surface-2:#1D2330;
+  --border:#283042; --border-strong:#38425A;
+  --text:#E6EAF2; --muted:#9AA3B5;
   --ok:#5CC08F; --warn:#E3A857; --danger:#F08A80; --gold:#E3A857;
   --ok-bg:#15291F; --warn-bg:#2B2215; --danger-bg:#2E1A18;
-  --b-kcd:#7FA6E3; --b-icd10:#9C9DE6; --b-icd11:#C59ADF; --b-snomed:#E0A070; --b-icnp:#E58FB6;
+  --b-kcd:#5EC2BD; --b-icd10:#9C9DE6; --b-icd11:#C59ADF; --b-snomed:#E0A070; --b-icnp:#E58FB6;
   --shadow:none; --shadow-lg:0 12px 32px rgba(0,0,0,.5);
   color-scheme:dark;
 }
@@ -203,14 +203,14 @@ svg .arrow{fill:var(--primary)} svg .arrow-multi{fill:var(--gold)}
 .hosp-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
 .hosp{border-radius:var(--radius);padding:14px;border:1px solid var(--border);background:var(--surface)}
 .hosp h3{display:flex;align-items:center;gap:8px}
-.hosp.a h3::before{content:'A';background:#2557A7}
+.hosp.a h3::before{content:'A';background:#0E7470}
 .hosp.b h3::before{content:'B';background:#9C4A12}
 .hosp h3::before{display:grid;place-items:center;width:24px;height:24px;border-radius:6px;color:#fff;font-size:.8rem}
 .term-list{display:flex;flex-wrap:wrap;gap:8px;min-height:44px;margin-top:10px}
 .term{border:1px solid var(--border-strong);background:var(--bg2);border-radius:8px;padding:6px 11px;cursor:grab;font-size:.86rem;touch-action:manipulation}
 .term:hover{background:var(--surface-2)}
 .term[aria-pressed="true"]{outline:2px solid var(--primary);outline-offset:1px;background:var(--primary-soft)}
-.term.a{border-left:3px solid #2557A7} .term.b{border-left:3px solid #9C4A12}
+.term.a{border-left:3px solid #0E7470} .term.b{border-left:3px solid #9C4A12}
 .term.wrong{border-color:var(--danger);background:var(--danger-bg)}
 .term.right{border-color:var(--ok);background:var(--ok-bg)}
 .targets{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px;margin-top:14px}
@@ -412,7 +412,7 @@ legend{padding:0 6px;font-weight:600;font-size:.86rem}
       </div>
       <div class="card">
         <h3><span class="std snomed">SNOMED CT</span> is-a 관계</h3>
-        <p class="small muted">내장 데이터 범위(직접 부모 + 최상위 계층) 내 시각화입니다. 금색 선은 다중 부모를 뜻합니다.</p>
+        <p class="small muted">내장 데이터 범위(직접 부모 + 최상위 계층) 내 시각화입니다. 주황색 선은 다중 부모를 뜻합니다.</p>
         <div class="row" id="multiChips" style="margin:8px 0"></div>
         <div class="svg-wrap" id="snomedSvg"></div>
         <div class="compare-box" id="hierCompare"></div>
@@ -949,7 +949,7 @@ function renderSnomedSvg(){
       : `<p class="small"><b>경로 없음</b> — ICD 분류에 자리가 없는 ${esc(TYPE_LABEL[c.concept_type])} 개념입니다.</p>`}</div>
     <div><h4><span class="std snomed">용어</span> SNOMED CT 부모</h4>
       <div class="path">${parents.map(p=>`↑ ${esc(p.term)} <span class="muted">${esc(p.id)}</span>`).join('<br>') || '—'}</div>
-      <p class="small muted">${multi ? `<b>${parents.length}개 관점</b>에서 동시에 분류됩니다. 검색·통계 시 어느 상위 개념으로 질의해도 이 개념이 포함됩니다.` : '이 개념은 부모가 1개입니다. 금색 칩의 개념과 비교해 보세요.'}</p></div>`;
+      <p class="small muted">${multi ? `<b>${parents.length}개 관점</b>에서 동시에 분류됩니다. 검색·통계 시 어느 상위 개념으로 질의해도 이 개념이 포함됩니다.` : '이 개념은 부모가 1개입니다. 주황색 칩의 개념과 비교해 보세요.'}</p></div>`;
   $$('#icdTree .leaf').forEach(b => b.setAttribute('aria-pressed', b.dataset.id === H.sel));
 }
 function renderHierarchy(){
@@ -1555,7 +1555,8 @@ function vApply(id, val){
 /* =========================================================
    7. Instructor mode
    ========================================================= */
-const getPin = () => { const p = Store.get(KEYS.pin, '0000'); return (typeof p === 'string' && /^\d{4,8}$/.test(p)) ? p : '0000'; };
+const DEFAULT_PIN = '72547254';
+const getPin = () => { const p = Store.get(KEYS.pin, DEFAULT_PIN); return (typeof p === 'string' && /^\d{4,8}$/.test(p)) ? p : DEFAULT_PIN; };
 function setInstructor(on){
   instructor = on;
   document.body.classList.toggle('instructor', on);
@@ -1569,7 +1570,7 @@ function setInstructor(on){
 }
 $('#lockBtn').addEventListener('click', () => {
   if (instructor){ setInstructor(false); toast('교수자 모드를 종료했습니다'); return; }
-  openModal({ title:'교수자 모드', narrow:true, html:`<form id="pinForm"><label for="pinInput">PIN 입력 (기본 0000)</label>
+  openModal({ title:'교수자 모드', narrow:true, html:`<form id="pinForm"><label for="pinInput">PIN 입력 (기본 ********)</label>
       <input id="pinInput" type="password" inputmode="numeric" autocomplete="off" maxlength="8" aria-describedby="pinHelp">
       <p class="small muted" id="pinHelp">간이 잠금입니다(브라우저 저장 PIN, 보안 기능 아님).</p>
       <p class="small" id="pinErr" role="alert" style="color:var(--danger)"></p>
