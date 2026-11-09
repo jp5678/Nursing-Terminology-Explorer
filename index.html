@@ -573,7 +573,7 @@ const Store = (() => {
     }
   };
 })();
-const KEYS = { verify:'nte.verify.v1', vsubs:'nte.vsubs.v1', data:'nte.data.v1', progress:'nte.progress.v1', quiz:'nte.quiz.v1', pin:'nte.pin.v1', theme:'nte.theme.v1', tab:'nte.tab.v1' };
+const KEYS = { seen:'nte.seen.v1', verify:'nte.verify.v1', vsubs:'nte.vsubs.v1', data:'nte.data.v1', progress:'nte.progress.v1', quiz:'nte.quiz.v1', pin:'nte.pin.v1', theme:'nte.theme.v1', tab:'nte.tab.v1' };
 
 function toast(msg){
   const t = $('#toast'); t.textContent = msg; t.classList.add('show');
@@ -611,9 +611,41 @@ function normalizeConcept(c){
   return d;
 }
 function validConcept(c){ return c && typeof c === 'object' && typeof c.id === 'string' && c.id && typeof c.concept_ko === 'string'; }
+let MERGE_NOTE = '';
+/* 교수자 편집본이 있어도 새 버전의 기본 개념을 자동 병합.
+   - 이미 본(seen) 기본 개념은 다시 넣지 않음 → 교수자가 삭제한 개념은 되살아나지 않음
+   - 같은 ID에 다른 개념(교수자 추가분)이 있으면 교수자 개념의 ID를 U###로 바꿔 보존 */
+// 병합 기능 도입 이전 버전에서 배포된 기본 개념(C001–C030). seen 기록이 없는 편집본은 이들을 이미 본 것으로 간주 → 교수자가 지운 개념을 되살리지 않음
+const LEGACY_DEFAULT_IDS = Array.from({ length:30 }, (_, i) => 'C' + String(i+1).padStart(3,'0'));
+function mergeDefaults(data, seenList){
+  const seen = new Set(Array.isArray(seenList) ? seenList : LEGACY_DEFAULT_IDS);
+  const added = [], renamed = [];
+  TERMINOLOGY_DATA.forEach(d => {
+    if (seen.has(d.id)) return;
+    const idx = data.findIndex(c => c.id === d.id);
+    if (idx >= 0){
+      const cur = data[idx];
+      const same = (cur.snomed.id && cur.snomed.id === d.snomed.id) || cur.concept_ko === d.concept_ko;
+      if (same){ seen.add(d.id); return; }
+      const used = new Set(data.map(c => c.id).concat(TERMINOLOGY_DATA.map(c => c.id)));
+      let n = 1, nid; do { nid = 'U' + String(n++).padStart(3,'0'); } while (used.has(nid));
+      renamed.push(`${cur.id}→${nid}`); cur.id = nid;
+    }
+    data.push(normalizeConcept(d)); added.push(d.id); seen.add(d.id);
+  });
+  Store.set(KEYS.seen, Array.from(seen));
+  if (added.length){
+    Store.set(KEYS.data, data);
+    MERGE_NOTE = `새 기본 개념 ${added.length}개를 편집본에 추가했습니다` + (renamed.length ? ` (교수자 개념 ID 변경: ${renamed.join(', ')})` : '');
+  }
+  return data;
+}
 function loadData(){
   const saved = Store.get(KEYS.data, null);
-  if (Array.isArray(saved) && saved.length && saved.every(validConcept)) { try { return saved.map(normalizeConcept); } catch(e) {} }
+  if (Array.isArray(saved) && saved.length && saved.every(validConcept)) {
+    try { return mergeDefaults(saved.map(normalizeConcept), Store.get(KEYS.seen, null)); } catch(e) {}
+  }
+  Store.set(KEYS.seen, TERMINOLOGY_DATA.map(c => c.id));
   return TERMINOLOGY_DATA.map(normalizeConcept);
 }
 let DATA = loadData();
@@ -964,8 +996,11 @@ function renderSnomedSvg(){
 }
 function renderHierarchy(){
   $('#hierSelect').innerHTML = DATA.map(c => `<option value="${esc(c.id)}">${esc(c.concept_ko)} (${esc(c.snomed.id||'—')})${c.snomed.parents.length>1?' ★':''}</option>`).join('');
-  $('#multiChips').innerHTML = '<span class="small muted">다중 부모 예시:</span> ' + DATA.filter(c => c.snomed.parents.length > 1)
-    .map(c => `<button type="button" class="chip" data-id="${esc(c.id)}" style="border-color:var(--gold)">★ ${esc(c.concept_ko)} (${c.snomed.parents.length})</button>`).join('');
+  const two = DATA.filter(c => c.snomed.parents.length === 2).length;
+  $('#multiChips').innerHTML = '<span class="small muted">대표 다중 부모(3개 이상):</span> ' + DATA.filter(c => c.snomed.parents.length >= 3)
+    .sort((a,b) => b.snomed.parents.length - a.snomed.parents.length)
+    .map(c => `<button type="button" class="chip" data-id="${esc(c.id)}" style="border-color:var(--gold)">★ ${esc(c.concept_ko)} (${c.snomed.parents.length})</button>`).join('')
+    + (two ? `<span class="small muted">· 부모 2개 개념 ${two}개는 위 선택 목록의 ★로 확인</span>` : '');
   renderIcdTree(); renderSnomedSvg();
 }
 renderers.hierarchy = renderHierarchy;
@@ -988,9 +1023,16 @@ const INTEROP_TERMS = [
   { id:'B3', h:'B', term:'천골부 압박손상 2단계', ans:'C017', n:8 },
   { id:'B4', h:'B', term:'낙상 발생', ans:'C022', n:5 },
   { id:'B5', h:'B', term:'숨참, 호흡곤란', ans:'C027', n:13 },
-  { id:'B6', h:'B', term:'고열', ans:'C025', n:7 }
+  { id:'B6', h:'B', term:'고열', ans:'C025', n:7 },
+  { id:'A7', h:'A', term:'URI', ans:'X_URI', n:15 },
+  { id:'B7', h:'B', term:'감기 기운, 콧물', ans:'C031', n:22 },
+  { id:'A8', h:'A', term:'CRF', ans:'C035', n:12 },
+  { id:'B8', h:'B', term:'만성 콩팥병 3기', ans:'C035', n:10 }
 ];
-const INTEROP_TARGETS = ['C001','C002','C004','C017','C022','C023','C025','C027'];
+const INTEROP_TARGETS = ['C001','C002','C004','C017','C022','C023','C025','C027','C031','X_URI','C035'];
+/* 앱 데이터에 없는 상위 개념 카드 (SNOMED CT 2026-11 International에서 활성·포함관계 확인: 감기 ⊂ 바이러스성 상기도감염 ⊂ 상기도감염) */
+const INTEROP_EXTRA = { X_URI:{ id:'X_URI', concept_ko:'상기도감염 (상위 개념)', concept_en:'Upper respiratory infection', snomed:{ id:'54150009', pt:'Upper respiratory infection' }, kcd9:{ code:'' } } };
+const ioConcept = id => INTEROP_EXTRA[id] || getConcept(id);
 const IO = { map:{}, selected:null, checked:false };
 function renderInterop(){
   const termBtn = t => {
@@ -1001,7 +1043,7 @@ function renderInterop(){
   $('#poolA').innerHTML = INTEROP_TERMS.filter(t => t.h==='A' && !IO.map[t.id]).map(termBtn).join('') || '<span class="small muted">모두 매핑됨 ✓</span>';
   $('#poolB').innerHTML = INTEROP_TERMS.filter(t => t.h==='B' && !IO.map[t.id]).map(termBtn).join('') || '<span class="small muted">모두 매핑됨 ✓</span>';
   $('#targets').innerHTML = INTEROP_TARGETS.map(id => {
-    const c = getConcept(id); if (!c) return '';
+    const c = ioConcept(id); if (!c) return '';
     const mapped = INTEROP_TERMS.filter(t => IO.map[t.id] === id);
     return `<div class="target ${IO.selected ? 'ready' : ''}" data-target="${id}" role="button" tabindex="0" aria-label="표준코드 ${esc(c.concept_ko)} SNOMED CT ${esc(c.snomed.id)}${IO.selected?' — 선택한 용어를 여기에 매핑':''}">
       <div><span class="std snomed">SNOMED CT</span> <span class="tid">${esc(c.snomed.id)}</span></div>
@@ -1068,13 +1110,17 @@ $('#interopCheck').addEventListener('click', () => {
       </div>
       <div class="card" style="margin-top:14px"><h3>⬇ 통합 테이블 (SNOMED CT 기준)</h3><div class="table-scroll"><table class="data">
         <thead><tr><th>SNOMED CT</th><th>개념</th><th>KCD</th><th>병원 A 원문</th><th>병원 B 원문</th><th>합계</th></tr></thead><tbody>
-        ${Object.keys(groups).map((id,i) => { const c = getConcept(id), g = groups[id]; const tot = [...g.A,...g.B].reduce((s,t)=>s+t.n,0);
+        ${Object.keys(groups).map((id,i) => { const c = ioConcept(id), g = groups[id]; const tot = [...g.A,...g.B].reduce((s,t)=>s+t.n,0);
           return `<tr class="anim-row" style="animation-delay:${0.7 + i*0.18}s"><td class="mono">${esc(c.snomed.id)}</td><td>${esc(c.concept_ko)}</td><td class="mono">${esc(c.kcd9.code||'—')}</td>
             <td>${g.A.map(t=>`${esc(t.term)} (${t.n})`).join('<br>')}</td><td>${g.B.map(t=>`${esc(t.term)} (${t.n})`).join('<br>')}</td><td><b>${tot}</b></td></tr>`; }).join('')}
-        </tbody></table></div><p class="small muted">※ 환자 수는 학습용 가상 수치입니다.</p></div>`;
+        </tbody></table></div>
+        <div class="insight small">🌳 <b>계층을 이용한 상위 집계</b>: “URI”와 “감기 기운”은 서로 다른 개념이라 같은 행으로 합치면 안 됩니다. 대신 SNOMED CT 계층(감기 ⊂ 바이러스성 상기도감염 ⊂ 상기도감염)을 따라 올리면 <b>상기도감염 전체 = ${INTEROP_TERMS.filter(t=>t.ans==='X_URI'||t.ans==='C031').reduce((s,t)=>s+t.n,0)}명</b>으로 정확히 집계할 수 있습니다. 분류체계로는 어려운 “용어체계의 상하위 질의”입니다.</div>
+        <p class="small muted">※ 환자 수는 학습용 가상 수치입니다.</p></div>`;
   } else {
     box.innerHTML = `<div class="problem"><b>❌ ${wrong.length}개 매핑이 올바르지 않습니다.</b> 빨간색 용어를 눌러 해제한 뒤 다시 매핑하세요.
-      <ul>${wrong.map(t => { const to = getConcept(IO.map[t.id]), ok = getConcept(t.ans);
+      <ul>${wrong.map(t => { const toId = IO.map[t.id], to = ioConcept(toId), ok = ioConcept(t.ans);
+        if (t.ans === 'C031' && toId === 'X_URI') return `<li>병원 ${t.h} “${esc(t.term)}” → <b>상기도감염(상위 개념)</b>으로 매핑됨. 틀린 것은 아니지만 <b>구체성이 손실</b>됩니다. 기록에 담긴 “감기”라는 정보가 사라져 감기 통계에서 빠집니다.</li>`;
+        if (t.ans === 'X_URI' && toId === 'C031') return `<li>병원 ${t.h} “${esc(t.term)}” → <b>감기</b>로 매핑됨. 원문보다 <b>구체적으로 과잉 해석</b>한 것입니다. URI에는 인두염·후두염 등 다른 상기도감염도 포함되므로 감기 환자 수가 부풀려집니다.</li>`;
         return `<li>병원 ${t.h} “${esc(t.term)}” → <b>${esc(to ? to.concept_ko : '?')}</b>로 매핑됨. 다른 병원의 “${esc(ok.concept_ko)}” 환자와 합쳐지지 못하고, 엉뚱한 개념의 통계에 섞입니다.</li>`; }).join('')}</ul>
       <h4 style="margin:12px 0 4px">표준 없이는 어떤 문제가 생기는가?</h4>
       <ul>
@@ -1145,7 +1191,25 @@ const RECORDS = [
       i3:{ c:'C014', opts:['C014','C015','C016','C008'], why:'패혈증: A41(기타 패혈증) / 91302008. SNOMED CT에서 부모가 3개인 다중 부모 개념입니다.' },
       i4:{ c:'C026', opts:['C026','C024','C027','C025'], why:'오심: SNOMED CT 422587007. ICD-10 R11은 “오심 및 구토”를 한 범주로 묶습니다 — 분류는 묶고, 용어는 세분합니다.' }
     },
-    distractors:{ d1:'이미 삽입되어 “유지 중”인 기구 상태입니다. 삽입 행위(procedure) 자체의 기록이 아니므로 이 문장에서는 핵심 코딩 대상이 아닙니다.' } }
+    distractors:{ d1:'이미 삽입되어 “유지 중”인 기구 상태입니다. 삽입 행위(procedure) 자체의 기록이 아니므로 이 문장에서는 핵심 코딩 대상이 아닙니다.' } },
+  { id:'R7', title:'인플루엔자 외래', meta:'가상 환자 #7 · 50대 남성 · 응급실/외래 · 15:20 기록',
+    text:'내원 전날부터 오한을 동반한 39.0℃ [[고열|i1]]과 근육통 호소. [[신속항원검사|d1]]에서 A형 양성으로 [[인플루엔자|i2]] 진단, 비말주의 격리 시작. [[두통|i3]] NRS 5점 호소하여 처방된 [[해열진통제|d2]] 투여. 과거력: [[고지혈증|i4]].',
+    items:{
+      i1:{ c:'C025', opts:['C025','C032','C024','C031'], why:'발열: R50.9 / 386661006. 원인 진단(인플루엔자)이 확정되면 진단 코딩에서는 원인 질환이 우선될 수 있지만, 간호기록에서는 발열 자체가 사정·중재 대상입니다.' },
+      i2:{ c:'C032', opts:['C032','C031','C008','C016'], why:'임상 개념은 인플루엔자(SNOMED 6142004)입니다. 감기와 구분하세요. 단, 이 환자는 검사로 바이러스가 확인되었으므로 ICD-10 분류는 이 앱의 J11(바이러스 미확인)이 아니라 J10 계열에 해당합니다. 같은 용어 개념이라도 분류 규칙에 따라 ICD 코드가 달라지는 예입니다(KCD 지침 확인 필요).' },
+      i3:{ c:'C039', opts:['C039','C024','C011','C032'], why:'두통: R51 / 25064002. SNOMED CT에서 두통은 “부위가 있는 통증 소견”의 하위 개념으로, 일반 통증(22253000)보다 구체적입니다.' },
+      i4:{ c:'C037', opts:['C037','C001','C004','C003'], why:'고지혈증: E78.5 / 55822004. “이상지질혈증”이라는 표현도 쓰입니다.' }
+    },
+    distractors:{ d1:'검사 행위는 이 실습의 코딩 대상이 아닙니다. 검사 결과(A형 양성)는 진단의 근거이자 ICD 분류(J10/J11)를 결정하는 맥락 정보입니다.', d2:'약물은 진단·간호 개념이 아니라 의약품 표준코드로 별도 관리합니다.' } },
+  { id:'R8', title:'급성 위장염 입원', meta:'가상 환자 #8 · 60대 여성 · 내과 병동 · 11:00 기록',
+    text:'어젯밤부터 수양성 설사 6회와 구토가 있어 [[급성 위장염|i1]] 진단으로 입원. 과거력: [[CKD|i2]] 3기, [[IDA|i3]]. 탈수 교정 위해 [[수액 1,000 mL|d1]] 투여 중이며 체중·섭취배설량 측정. 오후 [[오심|i4]] 호소함.',
+    items:{
+      i1:{ c:'C033', opts:['C033','C038','C026','C015'], why:'급성 위장염: A09 / 69776003. 이름이 비슷한 급성 위염(25458004)과 혼동하지 마세요. SNOMED CT에서는 위염이 위장염의 부모 중 하나입니다.' },
+      i2:{ c:'C035', opts:['C035','C015','C006','C004'], why:'“CKD”는 만성 콩팥병(N18 / 709044004)입니다. 병기(3기)는 ICD-10에서 N18 아래 병기별 세분 코드로 표현합니다. 수액 투여 시 체액 과다에 주의해야 합니다.' },
+      i3:{ c:'C034', opts:['C034','C002','C035','C019'], why:'“IDA” = Iron deficiency anemia. 철결핍성 빈혈(D50 / 87522002).' },
+      i4:{ c:'C026', opts:['C026','C033','C038','C024'], why:'오심: SNOMED CT 422587007. 이미 위장염 진단이 있어도 간호에서는 증상 자체를 사정·중재 대상으로 기록합니다. ICD-10 R11은 오심과 구토를 한 범주로 묶는 점도 기억하세요.' }
+    },
+    distractors:{ d1:'수액 종류·양은 투약 정보로, 의약품·처치 표준에서 별도로 다룹니다.' } }
 ];
 const REC = { cur:'R1', active:null, state:{} }; // state[recId][itemId] = { done:bool, first:bool|null, tried:[] } ; distractor seen
 function recState(id){ return REC.state[id] ||= { items:{}, seenD:{}, order:{} }; }
@@ -1242,7 +1306,13 @@ const QUIZ_POOL = [
   { id:'q10', type:'mc', q:'병원 A는 “DM”, 병원 B는 “당뇨병(2형)”으로 기록했다. 표준코드 매핑 없이 데이터를 합칠 때 생기는 문제로 가장 적절한 것은?', opts:['같은 질환이 서로 다른 항목으로 집계되어 통계와 의사결정지원이 왜곡된다','자동으로 같은 질환으로 인식되므로 문제없다','환자 개인정보가 자동으로 익명화된다','보험청구 금액이 자동으로 증가한다'], a:0, exp:'표준코드가 없으면 시스템은 문자열이 다른 두 항목을 다른 개념으로 처리합니다. 이것이 상호운용성 문제의 핵심입니다.' },
   { id:'q11', type:'ox', q:'분류체계에서는 상호배타성 원칙에 따라 하나의 질병이 원칙적으로 한 범주에만 분류된다.', a:'O', exp:'분류체계는 통계 집계를 위해 중복 없이 한 범주에 배정합니다. 반면 SNOMED CT는 다중 부모를 허용합니다.' },
   { id:'q12', type:'mc', q:'SNOMED CT 개념의 FSN “Diabetes mellitus type 2 (disorder)”에서 괄호 안 “disorder”의 의미는?', opts:['개념이 속한 계층을 나타내는 의미 태그(semantic tag)','ICD-10 장 번호','코드 검증 여부','한국어 번역 여부'], a:0, exp:'FSN 끝의 괄호는 의미 태그로, disorder·finding·procedure·event 등 개념의 계층을 나타냅니다.' },
-  { id:'q13', type:'ox', q:'ICD-10 범주 “R11”은 오심과 구토를 하나의 범주로 묶어 분류한다.', a:'O', exp:'ICD-10 R11은 “Nausea and vomiting(구역 및 구토)”입니다. SNOMED CT는 오심(422587007)을 독립 개념으로 표현합니다.' }
+  { id:'q13', type:'ox', q:'ICD-10 범주 “R11”은 오심과 구토를 하나의 범주로 묶어 분류한다.', a:'O', exp:'ICD-10 R11은 “Nausea and vomiting(구역 및 구토)”입니다. SNOMED CT는 오심(422587007)을 독립 개념으로 표현합니다.' },
+  { id:'q14', type:'mc', q:'감기(Common cold)와 로컬 용어 “URI(상기도감염)”의 관계로 옳은 것은?', opts:['감기는 상기도감염의 하위 개념이다','두 용어는 완전히 같은 개념이다','상기도감염이 감기의 하위 개념이다','두 개념은 서로 관련이 없다'], a:0, exp:'SNOMED CT에서 감기(82272006) ⊂ 바이러스성 상기도감염(281794004) ⊂ 상기도감염(54150009)입니다. “URI”를 감기로 매핑하면 과잉 해석, 감기를 URI로 매핑하면 구체성 손실입니다.' },
+  { id:'q15', type:'mc', q:'신속항원검사로 인플루엔자 바이러스가 확인된 환자의 ICD-10 분류에 대한 설명으로 가장 적절한 것은?', opts:['바이러스 미확인 범주(J11)가 아니라 확인된 경우의 범주(J10 계열)로 분류한다','검사 결과와 관계없이 항상 J11로 분류한다','감기(J00)로 분류한다','ICD는 인플루엔자를 분류하지 않는다'], a:0, exp:'ICD-10은 바이러스 확인 여부에 따라 인플루엔자를 J09–J11로 나눕니다. 같은 SNOMED 개념(6142004)이라도 맥락에 따라 ICD 코드가 달라집니다. 실제 코딩은 KCD 지침을 확인하세요.' },
+  { id:'q16', type:'ox', q:'변비(constipation)는 ICD-10에서 증상·징후 장(R00–R99)에 분류된다.', a:'X', exp:'변비는 ICD-10에서 소화계통 질환 장(XI장)의 K59.0입니다. SNOMED CT에서는 소견(finding)으로 표현되어, 같은 개념이 체계마다 다른 자리에 놓입니다.' },
+  { id:'q17', type:'mc', q:'SNOMED CT 코드 69776003이 나타내는 개념은?', opts:['급성 위장염','급성 위염','위식도역류병','오심'], a:0, exp:'69776003은 Acute gastroenteritis(급성 위장염)입니다. 이름이 비슷한 급성 위염은 25458004로 다른 개념입니다. 코드는 기억이 아니라 원본으로 확인해야 합니다.' },
+  { id:'q18', type:'mc', q:'로컬 기록의 “CRF(만성신부전)”를 현재 표준 개념으로 매핑할 때 가장 적절한 것은?', opts:['만성 콩팥병 (SNOMED CT 709044004)','요로감염 (68566005)','심부전 (84114007)','저혈당 (302866003)'], a:0, exp:'“만성신부전”은 과거 용어로, 현재는 “만성 콩팥병(CKD)”이 표준입니다. 로컬 용어 정규화의 대표 사례입니다.' },
+  { id:'q19', type:'ox', q:'SNOMED CT의 “우울장애(Depressive disorder)”는 ICD-10의 F32 “우울 에피소드”와 항상 1:1로 대응한다.', a:'X', exp:'SNOMED CT의 우울장애는 더 넓은 개념이라 상황에 따라 F32, F33(재발성 우울장애) 등 여러 ICD 범주로 갈 수 있습니다. 표준 간 매핑은 1:1이 아닐 수 있습니다.' }
 ];
 const QZ_DEFAULT = { history:[], wrong:[], best:null };
 let quizStore = Object.assign(clone(QZ_DEFAULT), Store.get(KEYS.quiz, {}) || {});
@@ -1336,6 +1406,10 @@ function renderOverview(){
       <div><b>📦 분류체계 (Classification)</b> — KCD, ICD<ul><li>목적: <b>집계·통계·청구</b></li><li>상호배타적·망라적 범주: 한 개념은 <b>한 곳</b>에만</li><li>“기타”, “상세불명” 범주 존재</li><li>세부 임상 정보는 묶여서 손실될 수 있음</li></ul></div>
       <div><b>🧬 임상용어체계 (Terminology)</b> — SNOMED CT, ICNP<ul><li>목적: <b>임상 기록·표현·상호운용성</b></li><li>개념 간 관계(is-a, 속성)로 의미 표현, <b>다중 부모</b> 허용</li><li>질환뿐 아니라 소견·절차·사건까지 표현</li><li>분류로 매핑(map)해 통계에 재사용 가능</li></ul></div>
     </div></div>
+  <div class="card" id="mismatchCard"><h3>🔀 매핑 불일치 학습 코너</h3>
+    <p class="small muted">표준 사이의 매핑은 항상 1:1이 아닙니다. 유형별 사례를 살펴보고 “개념 보기”로 5개 표준을 직접 비교하세요.</p>
+    <div class="filters" id="mmFilters" role="group" aria-label="불일치 유형 필터"></div>
+    <div class="v-list" id="mmList"></div></div>
   <div class="card"><h3>표준별 비교표</h3>
     <div class="table-scroll" style="margin-top:10px"><table class="data"><thead><tr><th>표준</th><th>성격</th><th>관리기관</th><th>목적</th><th>구조 특징</th><th>국내 활용</th></tr></thead><tbody>
       ${rows.map(r => `<tr><td><span class="std ${r[1]}">${r[0]}</span></td><td>${r[2]}</td><td>${r[3]}</td><td>${r[4]}</td><td>${r[5]}</td><td>${r[6]}</td></tr>`).join('')}
@@ -1359,7 +1433,52 @@ function renderOverview(){
     <li>국제간호협의회 ICN (ICNP): <a href="https://www.icn.ch" target="_blank" rel="noopener">icn.ch</a></li>
   </ul><p class="small muted">이 앱의 코드는 학습용 선별 자료이며 모든 항목은 기본적으로 “⚠ 검증 필요” 상태입니다.</p></div>`;
 }
-renderers.overview = renderOverview;
+const MM_TYPES = {
+  narrower:{ label:'SNOMED이 더 세분 (N:1)', desc:'여러 SNOMED 개념이 하나의 ICD 범주로 묶임' },
+  broader:{ label:'SNOMED이 더 넓음 (1:N)', desc:'하나의 SNOMED 개념이 여러 ICD 범주로 갈 수 있음' },
+  none:{ label:'대응 없음 (1:0)', desc:'ICD에 해당 범주가 없음' },
+  rule:{ label:'규칙·맥락 기반', desc:'다른 정보에 따라 ICD 코드가 달라짐' },
+  synonym:{ label:'용어 정규화', desc:'과거·로컬 용어를 현재 표준 개념으로' },
+  hier:{ label:'상하위 혼동', desc:'더 넓거나 좁은 개념으로 잘못 매핑' },
+  location:{ label:'체계별 위치 차이', desc:'같은 개념이 체계마다 다른 자리에 분류' }
+};
+const MISMATCH = [
+  { t:'narrower', cid:'C026', icd:'R11 구역 및 구토', sn:'422587007 오심', exp:'ICD는 오심과 구토를 한 범주로 묶고, SNOMED CT는 오심만 따로 표현합니다. SNOMED → ICD로 바꾸면 “구토 없는 오심”이라는 정보가 사라집니다.' },
+  { t:'narrower', cid:'C007', icd:'I48 심방세동 및 조동', sn:'49436004 심방세동', exp:'ICD 3자리 범주는 세동과 조동을 함께 포함합니다. 구분은 4자리 세분류에서 이루어집니다.' },
+  { t:'broader', cid:'C036', icd:'F32 우울 에피소드 / F33 재발성 우울장애 등', sn:'35489007 우울장애', exp:'SNOMED CT의 우울장애는 넓은 개념이라 단일 삽화인지, 재발성인지에 따라 서로 다른 ICD 범주로 매핑됩니다.' },
+  { t:'none', cid:'C029', icd:'— (질병 분류에 행위 없음)', sn:'446583004 유치도뇨관 삽입', exp:'ICD는 질병·사인 분류라 간호행위·시술을 다루지 않습니다. 국내에서는 별도의 행위분류 체계를 씁니다.' },
+  { t:'none', cid:'C023', icd:'— (WHO ICD-10)', sn:'129839007 낙상 위험 증가', exp:'위험 상태는 질병이 아니라 ICD-10에 대응 범주가 없습니다. 간호기록에 꼭 필요한 개념이 분류체계에서는 표현되지 않는 예입니다.' },
+  { t:'rule', cid:'C032', icd:'J10 계열 / J11', sn:'6142004 인플루엔자', exp:'같은 SNOMED 개념이라도 바이러스 확인 여부에 따라 ICD 코드가 달라집니다. 매핑하려면 검사 결과 같은 맥락 정보가 필요합니다.' },
+  { t:'rule', cid:'C002', icd:'E16.2 또는 당뇨병 범주', sn:'302866003 저혈당', exp:'당뇨병 동반 여부에 따라 분류 위치가 바뀝니다(포함·제외 지침). 실제 코딩은 KCD 지침을 확인하세요.' },
+  { t:'rule', cid:'C022', icd:'W19 (+ 손상 코드)', sn:'1912002 낙상', exp:'외인 코드는 단독 진단이 아니라 손상 코드(예: S72.0)와 함께 씁니다.' },
+  { t:'synonym', cid:'C035', icd:'N18 만성 콩팥병', sn:'709044004 만성 콩팥병', exp:'로컬 기록의 과거 용어 “만성신부전(CRF)”을 현재 표준 개념으로 정규화해야 합니다.' },
+  { t:'hier', cid:'C031', icd:'J00 감기 (URI는 별도 범주)', sn:'82272006 감기 ⊂ 54150009 상기도감염', exp:'“URI”를 감기로 매핑하면 과잉 해석, 감기를 상기도감염으로 매핑하면 구체성 손실입니다. 상호운용성 시뮬레이터에서 직접 체험해 보세요.' },
+  { t:'location', cid:'C040', icd:'K59.0 (XI 소화계통)', sn:'14760008 (finding)', exp:'변비는 SNOMED CT에서는 소견, ICD-10에서는 증상 장(R)이 아닌 소화계통 장에 분류됩니다.' },
+  { t:'location', cid:'C011', icd:'I63 (IX 순환계통)', sn:'432504007 뇌경색', exp:'ICD는 뇌경색을 신경계(VI장)가 아닌 순환계통(IX장)에 둡니다. 분류 축(혈관 원인)의 차이입니다.' }
+];
+const MM = { type:'all' };
+function renderMismatch(){
+  const fbox = $('#mmFilters'), lbox = $('#mmList'); if (!fbox || !lbox) return;
+  fbox.innerHTML = [['all','전체']].concat(Object.keys(MM_TYPES).map(k => [k, MM_TYPES[k].label]))
+    .map(([k,l]) => `<button type="button" class="chip" data-mm="${k}" aria-pressed="${MM.type===k}">${esc(l)}</button>`).join('');
+  const list = MISMATCH.filter(m => MM.type === 'all' || m.t === MM.type);
+  lbox.innerHTML = list.map(m => { const c = getConcept(m.cid);
+    return `<article class="v-task" style="border-left-color:var(--primary)">
+      <div class="row"><b>${esc(c ? c.concept_ko : m.cid)}</b><span class="type-badge">${esc(MM_TYPES[m.t].label)}</span></div>
+      <div class="small" style="margin-top:6px"><span class="std icd10">ICD/KCD</span> ${esc(m.icd)}</div>
+      <div class="small" style="margin-top:4px"><span class="std snomed">SNOMED CT</span> ${esc(m.sn)}</div>
+      <p class="small" style="margin-top:8px">${esc(m.exp)}</p>
+      ${c ? `<button type="button" class="btn sm" data-open="${esc(m.cid)}">개념 보기 →</button>` : ''}</article>`; }).join('');
+}
+function openConcept(id){
+  R.sel = id; R.q = ''; R.cat = '전체'; R.type = '전체'; const si = $('#searchInput'); if (si) si.value = '';
+  activateTab('rosetta'); scrollToMain();
+}
+$('#overviewBox').addEventListener('click', e => {
+  const f = e.target.closest('[data-mm]'); if (f){ MM.type = f.dataset.mm; renderMismatch(); return; }
+  const o = e.target.closest('[data-open]'); if (o) openConcept(o.dataset.open);
+});
+renderers.overview = () => { renderOverview(); renderMismatch(); };
 
 /* =========================================================
    6-2. Verification mission (학생 직접 검증)
@@ -1607,6 +1726,7 @@ function renderAdmin(){
       <button type="button" class="btn" id="adExport">⬇ JSON 내보내기</button>
       <label class="btn" for="adImport" style="margin:0;color:inherit;font-size:.9rem">⬆ JSON 불러오기</label><input type="file" id="adImport" accept=".json,application/json" class="sr-only">
       <button type="button" class="btn" id="adPin">PIN 변경</button>
+      <button type="button" class="btn" id="adRestore">누락된 기본 개념 복원</button>
       <button type="button" class="btn danger" id="adReset">내장 기본 데이터로 초기화</button>
     </div>
     <p class="small muted" style="margin-top:8px">현재 개념 ${DATA.length}개 · 편집 내용은 이 브라우저에만 저장됩니다. 다음 학기 재사용·동료 공유는 <b>JSON 내보내기</b>를 사용하세요.${Store.available() ? '' : ' <b style="color:var(--warn)">(저장소 차단 상태 — 새로고침 시 사라짐)</b>'}</p></div>
@@ -1627,7 +1747,8 @@ function renderAdmin(){
     <p class="small muted" style="margin-top:8px">미입력: ICD-11 ${empty.filter(x=>x.k==='icd11').length}건, ICNP ${empty.filter(x=>x.k==='icnp').length}건</p></div>`;
 }
 renderers.admin = renderAdmin;
-function nextId(){ let n = 1; const ids = new Set(DATA.map(c=>c.id)); while (ids.has('C'+String(n).padStart(3,'0'))) n++; return 'C'+String(n).padStart(3,'0'); }
+function nextId(){ // 교수자 추가 개념은 U### (기본 데이터 C###와 충돌 방지)
+  let n = 1; const ids = new Set(DATA.map(c=>c.id).concat(TERMINOLOGY_DATA.map(c=>c.id))); while (ids.has('U'+String(n).padStart(3,'0'))) n++; return 'U'+String(n).padStart(3,'0'); }
 function editForm(c, isNew){
   const v = (k) => esc(k);
   const ver = (k) => `<label class="check"><input type="checkbox" name="${k}.verified" ${c[k].verified?'checked':''}> 검증 완료 (verified)</label>`;
@@ -1729,9 +1850,16 @@ $('#adminBox').addEventListener('click', e => {
           Store.set(KEYS.pin, a); close(); toast('PIN을 변경했습니다' + (Store.available() ? '' : ' (저장소 차단: 이 창에서만 유효)'));
         }); } });
   }
+  if (t.id === 'adRestore'){
+    const have = new Set(DATA.map(c => c.id));
+    const missing = TERMINOLOGY_DATA.filter(d => !have.has(d.id));
+    if (!missing.length){ toast('누락된 기본 개념이 없습니다'); return; }
+    if (!window.confirm(`기본 개념 ${missing.length}개(${missing.map(d=>d.concept_ko).slice(0,5).join(', ')}${missing.length>5?' 외':''})를 다시 추가할까요?`)) return;
+    missing.forEach(d => DATA.push(normalizeConcept(d))); saveData(); renderAdmin(); toast(`${missing.length}개를 복원했습니다`); return;
+  }
   if (t.id === 'adReset'){
     if (!window.confirm('편집 내용을 모두 버리고 내장 기본 데이터로 되돌릴까요? (먼저 JSON 내보내기를 권장)')) return;
-    DATA = TERMINOLOGY_DATA.map(normalizeConcept); Store.remove(KEYS.data); renderAdmin(); toast('기본 데이터로 초기화했습니다');
+    DATA = TERMINOLOGY_DATA.map(normalizeConcept); Store.remove(KEYS.data); Store.set(KEYS.seen, TERMINOLOGY_DATA.map(c => c.id)); renderAdmin(); toast('기본 데이터로 초기화했습니다');
   }
 });
 $('#adminBox').addEventListener('change', e => {
@@ -1778,6 +1906,7 @@ $('#progressBtn').addEventListener('click', () => {
 });
 
 if (!Store.available()) $('#storageNotice').hidden = false;
+if (MERGE_NOTE) setTimeout(() => toast(MERGE_NOTE), 400);
 renderProgress();
 activateTab(Store.get(KEYS.tab, 'rosetta'));
 })();
