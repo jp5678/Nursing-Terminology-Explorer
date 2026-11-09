@@ -1,0 +1,1768 @@
+<!DOCTYPE html>
+<html lang="ko" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>간호 표준용어 탐색기</title>
+<meta name="description" content="AI융합 간호정보학 '간호·의료 표준용어' 단원용 인터랙티브 학습 앱 — KCD-9, ICD-10, ICD-11, SNOMED CT, ICNP 비교">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Noto+Sans+KR:wght@400;500;700&family=Noto+Serif+KR:wght@600;700&display=swap" rel="stylesheet">
+<style>
+/* =========================================================
+   Care Green Design System
+   ========================================================= */
+:root{
+  --primary:#065F46; --secondary:#10B981; --accent:#34D399; --gold:#F4C560;
+  --bg:#0A0F0D; --bg2:#0F1A16; --surface:rgba(255,255,255,.045); --surface-2:rgba(255,255,255,.08);
+  --border:rgba(52,211,153,.20); --border-strong:rgba(52,211,153,.45);
+  --text:#E7F5EE; --muted:#9DB8AC; --accent-text:#34D399; --on-primary:#ECFDF5;
+  --ok:#34D399; --warn:#FBBF24; --danger:#F87171;
+  --ok-bg:rgba(52,211,153,.12); --warn-bg:rgba(251,191,36,.12); --danger-bg:rgba(248,113,113,.12);
+  --b-kcd:#7DB4FF; --b-icd10:#A5B4FC; --b-icd11:#D8B4FE; --b-snomed:#F4C560; --b-icnp:#F9A8D4;
+  --shadow:0 10px 30px rgba(0,0,0,.35);
+  --radius:16px; --radius-sm:10px;
+  --f-title:'Noto Serif KR',serif; --f-body:'Noto Sans KR',system-ui,-apple-system,'Apple SD Gothic Neo','Malgun Gothic',sans-serif; --f-mono:'JetBrains Mono',ui-monospace,Consolas,monospace;
+  --disclaimer-h:64px;
+  color-scheme:dark;
+}
+[data-theme="light"]{
+  --bg:#F2F8F5; --bg2:#E3EFE9; --surface:rgba(255,255,255,.72); --surface-2:rgba(255,255,255,.92);
+  --border:rgba(6,95,70,.18); --border-strong:rgba(6,95,70,.45);
+  --text:#0B2A20; --muted:#46645A; --accent-text:#065F46; --on-primary:#ECFDF5;
+  --ok:#047857; --warn:#92400E; --danger:#B91C1C;
+  --ok-bg:rgba(4,120,87,.10); --warn-bg:rgba(217,119,6,.12); --danger-bg:rgba(185,28,28,.09);
+  --b-kcd:#1D4ED8; --b-icd10:#4338CA; --b-icd11:#7E22CE; --b-snomed:#8A5A00; --b-icnp:#BE185D;
+  --shadow:0 10px 26px rgba(6,95,70,.12);
+  color-scheme:light;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;font-family:var(--f-body);background:var(--bg);color:var(--text);line-height:1.6;font-size:15px;
+  padding-bottom:calc(var(--disclaimer-h) + 8px);min-height:100vh;overflow-x:hidden}
+.bg-glow{position:fixed;inset:0;z-index:-1;pointer-events:none;
+  background:radial-gradient(900px 500px at 10% -10%,rgba(16,185,129,.18),transparent 60%),
+             radial-gradient(700px 500px at 110% 10%,rgba(6,95,70,.30),transparent 60%),
+             radial-gradient(600px 400px at 50% 120%,rgba(244,197,96,.08),transparent 60%)}
+[data-theme="light"] .bg-glow{background:radial-gradient(900px 500px at 10% -10%,rgba(16,185,129,.16),transparent 60%),radial-gradient(700px 500px at 110% 10%,rgba(52,211,153,.18),transparent 60%)}
+h1,h2,h3{font-family:var(--f-title);line-height:1.35;margin:0}
+h2{font-size:1.35rem} h3{font-size:1.05rem}
+p{margin:.4em 0}
+a{color:var(--accent-text)}
+code,.mono{font-family:var(--f-mono)}
+button,input,select,textarea{font:inherit;color:inherit}
+:focus-visible{outline:3px solid var(--gold);outline-offset:2px;border-radius:6px}
+.skip{position:absolute;left:-999px;top:8px;background:var(--gold);color:#111;padding:8px 12px;border-radius:8px;z-index:100}
+.skip:focus{left:8px}
+.sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+[hidden]{display:none!important}
+
+/* ---------- Header ---------- */
+.topbar{position:sticky;top:0;z-index:30;display:flex;align-items:center;justify-content:space-between;gap:12px;
+  padding:10px 16px;background:color-mix(in srgb,var(--bg) 78%,transparent);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-bottom:1px solid var(--border)}
+.brand{display:flex;align-items:center;gap:10px;min-width:0}
+.logo{flex:none;width:38px;height:38px;border-radius:11px;display:grid;place-items:center;font-weight:700;color:var(--on-primary);
+  background:linear-gradient(135deg,var(--primary),var(--secondary));box-shadow:0 4px 14px rgba(16,185,129,.35)}
+.brand h1{font-size:1.08rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.brand .sub{margin:0;font-size:.74rem;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.brand>div{min-width:0}
+.top-actions{display:flex;gap:6px;align-items:center;flex:none}
+.icon-btn{width:40px;height:40px;border-radius:12px;border:1px solid var(--border);background:var(--surface);cursor:pointer;font-size:1.05rem;display:grid;place-items:center}
+.icon-btn:hover{border-color:var(--border-strong)}
+.icon-btn.active{background:var(--gold);color:#1a1a1a;border-color:var(--gold)}
+.pill{display:flex;align-items:center;gap:6px;height:40px;padding:0 12px;border-radius:999px;border:1px solid var(--border);background:var(--surface);cursor:pointer;font-size:.85rem;font-weight:600}
+.pill .bar{width:46px;height:6px;border-radius:99px;background:var(--surface-2);overflow:hidden}
+.pill .bar i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--secondary),var(--gold));transition:width .4s}
+
+/* ---------- Tabs ---------- */
+.tabs{display:flex;gap:6px;padding:10px 16px;overflow-x:auto;scrollbar-width:thin;position:sticky;top:61px;z-index:25;
+  background:color-mix(in srgb,var(--bg) 70%,transparent);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px)}
+.tab{flex:none;border:1px solid var(--border);background:var(--surface);padding:8px 14px;border-radius:999px;cursor:pointer;font-weight:500;font-size:.9rem;white-space:nowrap}
+.tab[aria-selected="true"]{background:linear-gradient(135deg,var(--primary),var(--secondary));color:var(--on-primary);border-color:transparent;box-shadow:0 4px 14px rgba(16,185,129,.3)}
+.tab.admin-tab{border-color:var(--gold);color:var(--gold)}
+[data-theme="light"] .tab.admin-tab{color:#7a5300}
+.tab.admin-tab[aria-selected="true"]{background:var(--gold);color:#1a1a1a}
+
+/* ---------- Layout ---------- */
+main{max-width:1240px;margin:0 auto;padding:12px 16px 24px}
+.panel-head{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:8px;margin:6px 0 14px}
+.panel-head p{color:var(--muted);margin:2px 0 0;font-size:.9rem}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px;
+  backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);box-shadow:var(--shadow)}
+.card+.card{margin-top:14px}
+.grid-2{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:14px}
+.muted{color:var(--muted)}
+.small{font-size:.84rem}
+.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.spacer{flex:1}
+.btn{border:1px solid var(--border-strong);background:var(--surface-2);padding:8px 14px;border-radius:10px;cursor:pointer;font-weight:500;font-size:.9rem}
+.btn:hover{border-color:var(--accent)}
+.btn.primary{background:linear-gradient(135deg,var(--primary),var(--secondary));color:var(--on-primary);border-color:transparent}
+.btn.gold{background:var(--gold);color:#1a1a1a;border-color:var(--gold)}
+.btn.danger{border-color:var(--danger);color:var(--danger)}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.btn.sm{padding:4px 10px;font-size:.8rem;border-radius:8px}
+.chip{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:999px;border:1px solid var(--border);background:var(--surface-2);font-size:.8rem}
+button.chip{cursor:pointer}
+.chip[aria-pressed="true"]{background:var(--secondary);color:#05261b;border-color:var(--secondary);font-weight:600}
+input[type=text],input[type=search],input[type=password],input[type=number],select,textarea{
+  width:100%;padding:10px 12px;border-radius:10px;border:1px solid var(--border-strong);background:var(--surface-2);outline:none}
+textarea{min-height:70px;resize:vertical}
+input:focus,select,textarea:focus{border-color:var(--accent)}
+label{font-size:.85rem;color:var(--muted);display:block;margin-bottom:4px}
+
+/* ---------- Badges ---------- */
+.std{display:inline-flex;align-items:center;gap:4px;padding:2px 9px;border-radius:7px;font-size:.74rem;font-weight:700;letter-spacing:.02em;border:1px solid currentColor;background:color-mix(in srgb,currentColor 12%,transparent)}
+.std.kcd9{color:var(--b-kcd)} .std.icd10{color:var(--b-icd10)} .std.icd11{color:var(--b-icd11)} .std.snomed{color:var(--b-snomed)} .std.icnp{color:var(--b-icnp)}
+.vbadge{display:inline-flex;align-items:center;gap:4px;font-size:.72rem;font-weight:700;padding:2px 8px;border-radius:999px}
+.vbadge.unv{color:var(--warn);background:var(--warn-bg);border:1px solid color-mix(in srgb,var(--warn) 45%,transparent)}
+.vbadge.ver{color:var(--ok);background:var(--ok-bg);border:1px solid color-mix(in srgb,var(--ok) 45%,transparent)}
+.type-badge{font-size:.72rem;padding:2px 8px;border-radius:6px;background:var(--surface-2);border:1px dashed var(--border-strong);font-family:var(--f-mono)}
+
+/* ---------- Tooltip ---------- */
+.tip{position:relative;display:inline-block}
+.tip-btn{width:24px;height:24px;border-radius:50%;border:1px solid var(--border-strong);background:transparent;cursor:help;font-size:.78rem;line-height:1;padding:0;color:var(--muted)}
+.tip-body{display:none;position:absolute;z-index:20;top:30px;right:-6px;width:min(280px,78vw);padding:10px 12px;border-radius:10px;
+  background:var(--bg2);border:1px solid var(--border-strong);box-shadow:var(--shadow);font-size:.8rem;line-height:1.5;color:var(--text);text-align:left}
+.tip:hover .tip-body,.tip:focus-within .tip-body{display:block}
+.tip-body b{color:var(--accent-text)}
+
+/* ---------- Rosetta ---------- */
+.rosetta{display:grid;grid-template-columns:320px minmax(0,1fr);gap:16px;align-items:start}
+.search-wrap{position:relative}
+.search-wrap input{padding-left:38px}
+.search-wrap .ico{position:absolute;left:12px;top:50%;transform:translateY(-50%);opacity:.6}
+.filters{display:flex;flex-wrap:wrap;gap:6px;margin:10px 0}
+.result-list{list-style:none;margin:0;padding:0;max-height:62vh;overflow:auto;display:flex;flex-direction:column;gap:6px}
+.result{width:100%;text-align:left;border:1px solid var(--border);background:var(--surface);border-radius:12px;padding:9px 11px;cursor:pointer}
+.result:hover{border-color:var(--border-strong)}
+.result[aria-pressed="true"]{border-color:var(--secondary);background:color-mix(in srgb,var(--secondary) 14%,transparent)}
+.result .t{font-weight:600}
+.result .e{font-size:.78rem;color:var(--muted)}
+.result .codes{display:flex;gap:6px;margin-top:4px;flex-wrap:wrap;font-family:var(--f-mono);font-size:.72rem}
+.concept-head{display:flex;flex-wrap:wrap;gap:10px;align-items:flex-start;justify-content:space-between}
+.concept-head h2{font-size:1.5rem}
+.concept-head .en{color:var(--muted);font-size:.95rem}
+.std-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(152px,1fr));gap:10px;margin-top:14px}
+@media (max-width:1100px) and (min-width:901px){.std-grid{grid-template-columns:repeat(auto-fit,minmax(190px,1fr))}}
+.std-card{position:relative;border-radius:14px;padding:14px;background:var(--surface);border:1px solid var(--border);border-top:4px solid var(--c,var(--accent));display:flex;flex-direction:column;gap:6px;min-height:190px}
+.std-card.kcd9{--c:var(--b-kcd)} .std-card.icd10{--c:var(--b-icd10)} .std-card.icd11{--c:var(--b-icd11)} .std-card.snomed{--c:var(--b-snomed)} .std-card.icnp{--c:var(--b-icnp)}
+.std-card .top{display:flex;justify-content:space-between;align-items:center;gap:6px}
+.std-card .kind{font-size:.72rem;color:var(--muted)}
+.code-big{font-family:var(--f-mono);font-size:1.3rem;font-weight:600;color:var(--c);word-break:break-all}
+.code-empty{font-size:.92rem;font-weight:600;color:var(--muted);padding:4px 0}
+.std-card .nm{font-weight:500;font-size:.92rem}
+.std-card .ex{font-size:.78rem;color:var(--muted)}
+.std-card .why{font-size:.78rem;padding:8px;border-radius:8px;background:var(--surface-2);border:1px dashed var(--border-strong)}
+.std-card .foot{margin-top:auto;display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.insight{margin-top:14px;padding:12px 14px;border-radius:12px;border-left:4px solid var(--gold);background:color-mix(in srgb,var(--gold) 9%,transparent);font-size:.9rem}
+.insight b{color:var(--accent-text)}
+.local-terms{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.local-terms .chip{font-family:var(--f-mono)}
+
+/* ---------- Hierarchy ---------- */
+.tree{font-size:.88rem}
+.tree details{margin:3px 0 3px 4px}
+.tree details details{margin-left:14px;border-left:1px dashed var(--border-strong);padding-left:8px}
+.tree summary{cursor:pointer;padding:4px 6px;border-radius:8px;list-style:none}
+.tree summary::-webkit-details-marker{display:none}
+.tree summary::before{content:'▸';display:inline-block;width:14px;transition:transform .2s;color:var(--accent-text)}
+.tree details[open]>summary::before{transform:rotate(90deg)}
+.tree summary:hover{background:var(--surface-2)}
+.tree .leaf{display:flex;gap:8px;align-items:center;width:calc(100% - 22px);margin:3px 0 3px 22px;text-align:left;border:1px solid transparent;background:transparent;padding:4px 8px;border-radius:8px;cursor:pointer}
+.tree .leaf:hover{background:var(--surface-2)}
+.tree .leaf[aria-pressed="true"]{border-color:var(--secondary);background:color-mix(in srgb,var(--secondary) 14%,transparent)}
+.tree .leaf code{color:var(--b-kcd);min-width:46px}
+.outside{margin-top:12px;padding:10px;border-radius:10px;border:1px dashed var(--warn);background:var(--warn-bg)}
+.svg-wrap{width:100%;overflow:hidden}
+.svg-wrap svg{width:100%;height:auto;display:block}
+svg .n-rect{fill:var(--surface-2);stroke:var(--border-strong);stroke-width:1.2}
+svg .n-root{fill:transparent;stroke:var(--muted);stroke-dasharray:4 4}
+svg .n-focus{fill:color-mix(in srgb,var(--secondary) 22%,var(--bg2));stroke:var(--secondary);stroke-width:2.2}
+svg .n-multi{stroke:var(--gold);stroke-width:2.6}
+svg .n-text{fill:var(--text);font-family:var(--f-body);font-size:13px}
+svg .n-id{fill:var(--muted);font-family:var(--f-mono);font-size:11px}
+svg .edge{stroke:var(--accent);stroke-width:1.6;fill:none}
+svg .edge.multi{stroke:var(--gold);stroke-width:2.4}
+svg .edge.dashed{stroke:var(--muted);stroke-dasharray:5 5}
+svg .e-label{fill:var(--muted);font-size:11px;font-family:var(--f-mono)}
+svg .banner{fill:var(--gold);font-weight:700;font-size:13px;font-family:var(--f-body)}
+svg .arrow{fill:var(--accent)} svg .arrow-multi{fill:var(--gold)}
+.compare-box{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px}
+.compare-box>div{padding:10px 12px;border-radius:10px;background:var(--surface-2);border:1px solid var(--border);font-size:.84rem}
+.compare-box h4{margin:0 0 4px;font-size:.88rem}
+.path{font-family:var(--f-mono);font-size:.8rem;word-break:break-word}
+
+/* ---------- Interop ---------- */
+.hosp-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.hosp{border-radius:14px;padding:12px;border:1px solid var(--border);background:var(--surface)}
+.hosp h3{display:flex;align-items:center;gap:8px}
+.hosp.a h3::before{content:'A';background:#2563EB}
+.hosp.b h3::before{content:'B';background:#C2410C}
+.hosp h3::before{display:grid;place-items:center;width:26px;height:26px;border-radius:8px;color:#fff;font-family:var(--f-body);font-size:.85rem}
+.term-list{display:flex;flex-wrap:wrap;gap:8px;min-height:44px;margin-top:8px}
+.term{border:1px solid var(--border-strong);background:var(--surface-2);border-radius:10px;padding:7px 11px;cursor:grab;font-size:.88rem;touch-action:manipulation}
+.term[aria-pressed="true"]{outline:3px solid var(--gold);outline-offset:1px}
+.term.a{border-left:4px solid #3B82F6} .term.b{border-left:4px solid #F97316}
+.term.wrong{border-color:var(--danger);background:var(--danger-bg)}
+.term.right{border-color:var(--ok);background:var(--ok-bg)}
+.targets{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px;margin-top:14px}
+.target{border:2px dashed var(--border-strong);border-radius:14px;padding:10px;background:var(--surface);cursor:pointer;text-align:left;min-height:110px;display:flex;flex-direction:column;gap:4px}
+.target.over,.target.ready{border-color:var(--gold);background:color-mix(in srgb,var(--gold) 10%,transparent)}
+.target .tid{font-family:var(--f-mono);color:var(--b-snomed);font-weight:600}
+.target .drop{display:flex;flex-wrap:wrap;gap:6px;margin-top:auto}
+.merge-wrap{margin-top:16px}
+table.data{width:100%;border-collapse:collapse;font-size:.86rem}
+table.data th,table.data td{padding:8px 10px;border-bottom:1px solid var(--border);text-align:left;vertical-align:top}
+table.data th{font-weight:700;color:var(--accent-text);background:var(--surface-2);position:sticky;top:0}
+.table-scroll{overflow-x:auto;border-radius:12px;border:1px solid var(--border)}
+.anim-row{animation:rowIn .6s both}
+.anim-left{animation:slideL .7s both} .anim-right{animation:slideR .7s both}
+@keyframes rowIn{from{opacity:0;transform:translateY(12px) scale(.98)}to{opacity:1;transform:none}}
+@keyframes slideL{from{opacity:0;transform:translateX(-40px)}to{opacity:1;transform:none}}
+@keyframes slideR{from{opacity:0;transform:translateX(40px)}to{opacity:1;transform:none}}
+.problem{border-left:4px solid var(--danger);background:var(--danger-bg);padding:12px 14px;border-radius:10px;margin-top:14px}
+.success{border-left:4px solid var(--ok);background:var(--ok-bg);padding:12px 14px;border-radius:10px;margin-top:14px}
+.problem ul,.success ul{margin:6px 0 0;padding-left:20px}
+
+/* ---------- Records ---------- */
+.rec-tabs{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px}
+.rec-tab{border:1px solid var(--border);background:var(--surface);border-radius:10px;padding:6px 12px;cursor:pointer;font-size:.86rem}
+.rec-tab[aria-pressed="true"]{border-color:var(--secondary);background:color-mix(in srgb,var(--secondary) 16%,transparent);font-weight:600}
+.rec-tab .done{color:var(--ok)}
+.note-paper{font-size:1.02rem;line-height:2.1;padding:18px;border-radius:12px;background:var(--surface-2);border:1px solid var(--border)}
+.note-meta{font-size:.82rem;color:var(--muted);margin-bottom:6px}
+.phrase{border:none;background:transparent;padding:1px 1px;margin:0;border-radius:5px;cursor:pointer;border-bottom:2px dotted var(--accent);font-size:inherit;line-height:inherit}
+.phrase:hover{background:color-mix(in srgb,var(--accent) 16%,transparent)}
+.phrase.active{background:color-mix(in srgb,var(--gold) 28%,transparent)}
+.phrase.done{background:var(--ok-bg);border-bottom:2px solid var(--ok)}
+.phrase.miss{background:var(--surface);border-bottom:2px solid var(--muted);color:var(--muted)}
+.opt{display:block;width:100%;text-align:left;border:1px solid var(--border-strong);background:var(--surface);padding:10px 12px;border-radius:10px;margin-top:8px;cursor:pointer}
+.opt:hover{border-color:var(--accent)}
+.opt.correct{border-color:var(--ok);background:var(--ok-bg)}
+.opt.incorrect{border-color:var(--danger);background:var(--danger-bg)}
+.opt .codes{font-family:var(--f-mono);font-size:.78rem;color:var(--muted)}
+.feedback{margin-top:10px;padding:10px 12px;border-radius:10px;font-size:.9rem}
+.feedback.ok{background:var(--ok-bg);border:1px solid var(--ok)}
+.feedback.no{background:var(--danger-bg);border:1px solid var(--danger)}
+.feedback.info{background:var(--warn-bg);border:1px solid var(--warn)}
+
+/* ---------- Quiz ---------- */
+.quiz-progress{height:8px;border-radius:99px;background:var(--surface-2);overflow:hidden;margin:8px 0 14px}
+.quiz-progress i{display:block;height:100%;background:linear-gradient(90deg,var(--secondary),var(--gold));transition:width .3s}
+.q-text{font-size:1.1rem;font-weight:600;margin:6px 0 4px}
+.ox{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px}
+.ox .opt{text-align:center;font-size:2rem;font-weight:700;padding:18px;margin:0}
+.score-big{font-family:var(--f-title);font-size:3rem;color:var(--accent-text);line-height:1}
+.hist{display:flex;gap:6px;align-items:flex-end;height:70px;margin-top:8px}
+.hist span{flex:1;max-width:28px;background:linear-gradient(180deg,var(--accent),var(--primary));border-radius:4px 4px 0 0;min-height:4px}
+
+/* ---------- Overview ---------- */
+.timeline{list-style:none;margin:0;padding:0;position:relative}
+.timeline::before{content:'';position:absolute;left:58px;top:4px;bottom:4px;width:2px;background:var(--border-strong)}
+.timeline li{display:grid;grid-template-columns:52px 1fr;gap:18px;padding:6px 0;position:relative}
+.timeline li::before{content:'';position:absolute;left:53px;top:13px;width:12px;height:12px;border-radius:50%;background:var(--secondary);box-shadow:0 0 0 3px var(--bg)}
+.timeline li.plan::before{background:var(--gold)}
+.timeline .y{font-family:var(--f-mono);font-weight:600;color:var(--accent-text);text-align:right}
+.vs{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.vs>div{padding:14px;border-radius:12px;border:1px solid var(--border);background:var(--surface-2)}
+.vs ul{margin:6px 0 0;padding-left:18px;font-size:.9rem}
+
+/* ---------- Verification mission ---------- */
+.v-guide{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:10px;margin-top:10px}
+.v-guide>div{padding:12px;border-radius:12px;background:var(--surface-2);border:1px solid var(--border);font-size:.86rem}
+.v-guide ol{margin:6px 0 0;padding-left:18px}
+.v-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:10px;margin-top:12px}
+.v-task{border:1px solid var(--border);border-left:4px solid var(--warn);border-radius:12px;padding:12px;background:var(--surface)}
+.v-task.st-match{border-left-color:var(--ok)} .v-task.st-mismatch{border-left-color:var(--danger)} .v-task.st-notfound{border-left-color:var(--muted)}
+.v-task .app-val{font-size:.9rem;padding:6px 8px;border-radius:8px;background:var(--surface-2);border:1px dashed var(--border-strong);margin:6px 0;word-break:break-word}
+.v-task .st-row{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0}
+.v-task input[type=text]{padding:7px 10px;font-size:.86rem;margin-top:4px}
+.v-done{font-size:.78rem;font-weight:700}
+.v-summary{display:flex;flex-wrap:wrap;gap:8px;margin-top:6px}
+
+/* ---------- Admin ---------- */
+.admin-only{display:none!important}
+body.instructor .admin-only{display:inline-flex!important}
+body.instructor .admin-block{display:block!important}
+.form-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px}
+fieldset{border:1px solid var(--border);border-radius:12px;padding:10px 12px;margin:10px 0}
+legend{padding:0 6px;font-weight:700;font-size:.88rem}
+.check{display:flex;align-items:center;gap:6px;color:var(--text);font-size:.85rem;margin:6px 0 0}
+.check input{width:18px;height:18px;accent-color:var(--secondary)}
+
+/* ---------- Modal / toast / notice / footer ---------- */
+.modal-back{position:fixed;inset:0;z-index:60;background:rgba(0,0,0,.55);display:grid;place-items:center;padding:16px}
+.modal{width:min(720px,100%);max-height:88vh;overflow:auto;background:var(--bg2);border:1px solid var(--border-strong);border-radius:18px;padding:18px;box-shadow:var(--shadow)}
+.modal.narrow{width:min(380px,100%)}
+.modal-head{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:10px}
+#toast{position:fixed;left:50%;bottom:calc(var(--disclaimer-h) + 16px);transform:translateX(-50%);z-index:70;max-width:min(520px,calc(100vw - 32px));
+  padding:10px 16px;border-radius:12px;background:var(--bg2);border:1px solid var(--border-strong);box-shadow:var(--shadow);font-size:.9rem;opacity:0;pointer-events:none;transition:opacity .25s}
+#toast.show{opacity:1}
+.notice{max-width:1240px;margin:10px auto 0;padding:10px 14px;border-radius:12px;background:var(--warn-bg);border:1px solid var(--warn);font-size:.85rem;width:calc(100% - 32px)}
+.credit{text-align:center;padding:18px 16px 6px;color:var(--muted);font-size:.88rem;font-family:var(--f-title)}
+.disclaimer{position:fixed;left:0;right:0;bottom:0;z-index:40;min-height:var(--disclaimer-h);display:flex;align-items:center;justify-content:center;
+  padding:8px 16px;font-size:.76rem;line-height:1.45;text-align:center;color:var(--text);
+  background:color-mix(in srgb,var(--bg2) 92%,transparent);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-top:1px solid var(--border-strong)}
+.disclaimer b{color:var(--gold)}
+[data-theme="light"] .disclaimer b{color:#7a5300}
+
+/* ---------- Responsive ---------- */
+@media (max-width:900px){
+  .rosetta{grid-template-columns:1fr}
+  .result-list{max-height:260px}
+  .grid-2,.hosp-grid{grid-template-columns:1fr}
+}
+@media (max-width:560px){
+  body{font-size:14.5px}
+  :root{--disclaimer-h:78px}
+  .brand .sub{display:none}
+  .brand h1{font-size:.98rem}
+  .pill .bar{display:none}
+  .tabs{top:61px}
+  .concept-head h2{font-size:1.25rem}
+  .compare-box,.vs{grid-template-columns:1fr}
+  .card{padding:13px}
+  .note-paper{font-size:.96rem;padding:13px}
+  .disclaimer{font-size:.7rem}
+}
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}
+}
+</style>
+</head>
+<body>
+<a class="skip" href="#main">본문 바로가기</a>
+<div class="bg-glow" aria-hidden="true"></div>
+
+<header class="topbar">
+  <div class="brand">
+    <div class="logo" aria-hidden="true">✚</div>
+    <div>
+      <h1>간호 표준용어 탐색기</h1>
+      <p class="sub">Nursing Terminology Explorer · AI융합 간호정보학</p>
+    </div>
+  </div>
+  <div class="top-actions">
+    <button id="progressBtn" class="pill" type="button" aria-label="학습 진도 보기"><span class="bar" aria-hidden="true"><i id="progressBar"></i></span><span id="progressText">0%</span></button>
+    <button id="themeBtn" class="icon-btn" type="button" aria-label="라이트 모드로 전환">☀️</button>
+    <button id="lockBtn" class="icon-btn" type="button" aria-label="교수자 모드 진입 (PIN 필요)">🔒</button>
+  </div>
+</header>
+
+<nav class="tabs" role="tablist" aria-label="학습 메뉴">
+  <button class="tab" role="tab" id="tab-rosetta" aria-controls="panel-rosetta" aria-selected="true">🔍 개념 검색·비교</button>
+  <button class="tab" role="tab" id="tab-hierarchy" aria-controls="panel-hierarchy" aria-selected="false" tabindex="-1">🌳 계층 탐색</button>
+  <button class="tab" role="tab" id="tab-interop" aria-controls="panel-interop" aria-selected="false" tabindex="-1">🏥 상호운용성</button>
+  <button class="tab" role="tab" id="tab-records" aria-controls="panel-records" aria-selected="false" tabindex="-1">📝 간호기록 코딩</button>
+  <button class="tab" role="tab" id="tab-quiz" aria-controls="panel-quiz" aria-selected="false" tabindex="-1">🎯 퀴즈</button>
+  <button class="tab" role="tab" id="tab-overview" aria-controls="panel-overview" aria-selected="false" tabindex="-1">📚 표준용어 개요</button>
+  <button class="tab" role="tab" id="tab-verify" aria-controls="panel-verify" aria-selected="false" tabindex="-1">🔎 검증 미션</button>
+  <button class="tab admin-tab" role="tab" id="tab-admin" aria-controls="panel-admin" aria-selected="false" tabindex="-1" hidden>🛠 교수자</button>
+</nav>
+
+<div id="storageNotice" class="notice" role="status" hidden>⚠ 이 브라우저에서는 저장소(localStorage)를 사용할 수 없습니다. 앱은 정상 작동하지만, 학습 진도·퀴즈 기록·교수자 편집 내용은 창을 닫으면 사라집니다. 편집 내용은 교수자 모드의 <b>JSON 내보내기</b>로 보관하세요.</div>
+
+<main id="main">
+  <!-- 1. Rosetta -->
+  <section id="panel-rosetta" role="tabpanel" aria-labelledby="tab-rosetta" tabindex="0">
+    <div class="panel-head">
+      <div><h2>개념 검색·비교 <span class="muted small">Rosetta View</span></h2>
+      <p>하나의 임상 개념이 5개 표준에서 어떻게 코드화되는지 나란히 비교합니다. 한글·영문·약어(DM, HTN)·코드·초성(ㄷㄴ)으로 검색하세요.</p></div>
+    </div>
+    <div class="rosetta">
+      <div class="card">
+        <div class="search-wrap">
+          <span class="ico" aria-hidden="true">🔍</span>
+          <input id="searchInput" type="search" placeholder="예: 당뇨, DM, ㄷㄴ, E11, 44054006" aria-label="개념 통합 검색" autocomplete="off">
+        </div>
+        <div class="filters" id="catFilters" role="group" aria-label="영역 필터"></div>
+        <div class="filters" id="typeFilters" role="group" aria-label="개념 유형 필터"></div>
+        <p class="small muted" id="resultCount" aria-live="polite"></p>
+        <ul class="result-list" id="resultList" aria-label="검색 결과"></ul>
+      </div>
+      <div id="conceptDetail" class="card" aria-live="polite"></div>
+    </div>
+  </section>
+
+  <!-- 2. Hierarchy -->
+  <section id="panel-hierarchy" role="tabpanel" aria-labelledby="tab-hierarchy" tabindex="0" hidden>
+    <div class="panel-head">
+      <div><h2>계층 탐색</h2>
+      <p>분류(ICD/KCD)는 <b>한 개념이 한 자리</b>에만, 용어(SNOMED CT)는 <b>여러 부모(is-a)</b>를 가질 수 있습니다.</p></div>
+      <div class="row">
+        <label for="hierSelect" class="sr-only">SNOMED CT 개념 선택</label>
+        <select id="hierSelect" style="min-width:220px"></select>
+      </div>
+    </div>
+    <div class="grid-2">
+      <div class="card">
+        <h3><span class="std kcd9">KCD-9</span> <span class="std icd10">ICD-10</span> 장 → 블록 → 범주</h3>
+        <p class="small muted">상호배타적 단일 계층: 각 개념은 하나의 경로만 가집니다. 개념을 누르면 오른쪽 SNOMED CT 계층과 비교됩니다.</p>
+        <div class="tree" id="icdTree"></div>
+      </div>
+      <div class="card">
+        <h3><span class="std snomed">SNOMED CT</span> is-a 관계</h3>
+        <p class="small muted">내장 데이터 범위(직접 부모 + 최상위 계층) 내 시각화입니다. 금색 선은 다중 부모를 뜻합니다.</p>
+        <div class="row" id="multiChips" style="margin:8px 0"></div>
+        <div class="svg-wrap" id="snomedSvg"></div>
+        <div class="compare-box" id="hierCompare"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 3. Interop -->
+  <section id="panel-interop" role="tabpanel" aria-labelledby="tab-interop" tabindex="0" hidden>
+    <div class="panel-head">
+      <div><h2>상호운용성 시뮬레이터</h2>
+      <p>두 병원이 같은 환자 상태를 서로 다른 로컬 용어로 기록했습니다. 각 로컬 용어를 알맞은 표준코드(SNOMED CT)에 매핑해 데이터를 통합하세요.</p></div>
+      <div class="row"><button class="btn" id="interopReset" type="button">↺ 다시 하기</button><button class="btn primary" id="interopCheck" type="button">매핑 확인 · 통합</button></div>
+    </div>
+    <p class="small muted" id="interopHint">💡 마우스: 용어를 코드 카드로 <b>드래그</b> · 터치/키보드: 용어를 <b>탭(Enter)</b>한 뒤 코드 카드를 <b>탭(Enter)</b> · 매핑된 용어를 다시 누르면 해제됩니다.</p>
+    <div class="hosp-grid">
+      <div class="hosp a"><h3>병원 A <span class="small muted">(영문 약어 위주 EMR)</span></h3><div class="term-list" id="poolA" aria-label="병원 A 미매핑 로컬 용어"></div></div>
+      <div class="hosp b"><h3>병원 B <span class="small muted">(한글 서술 위주 EMR)</span></h3><div class="term-list" id="poolB" aria-label="병원 B 미매핑 로컬 용어"></div></div>
+    </div>
+    <div class="targets" id="targets" aria-label="표준코드 카드"></div>
+    <div id="interopResult" class="merge-wrap" aria-live="polite"></div>
+  </section>
+
+  <!-- 4. Records -->
+  <section id="panel-records" role="tabpanel" aria-labelledby="tab-records" tabindex="0" hidden>
+    <div class="panel-head">
+      <div><h2>간호기록 코딩 실습</h2>
+      <p>점선 표현을 눌러 핵심 개념을 추출하고 알맞은 표준코드를 고르세요. 핵심이 아닌 표현도 섞여 있습니다. (모든 기록은 완전 가상 사례)</p></div>
+      <button class="btn" id="recReset" type="button">↺ 이 기록 다시 하기</button>
+    </div>
+    <div class="rec-tabs" id="recTabs" role="group" aria-label="간호기록 선택"></div>
+    <div class="grid-2">
+      <div class="card"><div id="recNote"></div></div>
+      <div class="card"><div id="recWork" aria-live="polite"></div></div>
+    </div>
+    <div class="card" style="margin-top:14px"><h3>추출된 구조화 데이터</h3><p class="small muted">자유서술 간호기록 → 표준코드로 구조화된 결과입니다.</p><div id="recExtracted"></div></div>
+  </section>
+
+  <!-- 5. Quiz -->
+  <section id="panel-quiz" role="tabpanel" aria-labelledby="tab-quiz" tabindex="0" hidden>
+    <div class="panel-head">
+      <div><h2>퀴즈</h2><p>10문항(객관식 + O/X), 문항 순서 무작위. 점수와 오답은 이 브라우저에 저장됩니다.</p></div>
+    </div>
+    <div class="card" id="quizBox" aria-live="polite"></div>
+  </section>
+
+  <!-- 6. Overview -->
+  <section id="panel-overview" role="tabpanel" aria-labelledby="tab-overview" tabindex="0" hidden>
+    <div class="panel-head"><div><h2>표준용어 개요</h2><p>목적·관리기관·국내 활용 비교</p></div></div>
+    <div id="overviewBox"></div>
+  </section>
+
+  <!-- 6-2. Verification mission -->
+  <section id="panel-verify" role="tabpanel" aria-labelledby="tab-verify" tabindex="0" hidden>
+    <div class="panel-head">
+      <div><h2>검증 미션 <span class="muted small">학생이 직접 공식 원본과 대조하기</span></h2>
+      <p>앱의 KCD-9 명칭·장·블록과 ICNP 제안 개념명은 <b>검증 전 학습용 제안값</b>입니다. 공식 원본을 찾아 대조하고, 결과를 파일로 내보내 제출하세요.</p></div>
+    </div>
+    <div id="verifyBox"></div>
+  </section>
+
+  <!-- 7. Admin -->
+  <section id="panel-admin" role="tabpanel" aria-labelledby="tab-admin" tabindex="0" hidden>
+    <div class="panel-head">
+      <div><h2>교수자 모드</h2><p>개념 데이터 추가·수정, 검증(verified) 표시, JSON 내보내기/불러오기. 변경 내용은 이 브라우저에 저장됩니다.</p></div>
+    </div>
+    <div id="adminBox"></div>
+  </section>
+</main>
+
+<footer class="credit">정종필 교수 · 청암대학교 간호학과</footer>
+<div class="disclaimer" role="note" aria-label="고지 문구"><span><b>고지</b> 본 앱은 교육용 학습도구입니다. 코드 정보는 학습 목적의 선별 자료이며 실제 의무기록·보험청구에는 국가데이터처(구 통계청) KCD 공식 자료 및 각 표준 관리기관의 원본을 사용하십시오.</span></div>
+<div id="modalRoot"></div>
+<div id="toast" role="status" aria-live="polite"></div>
+<script>
+/* =========================================================
+   TERMINOLOGY_DATA — 교육용 선별 데이터
+   ⚠ 정확성 규칙
+   - 모든 항목 verified:false 로 시작 (교수자가 공식 원본으로 확인 후 체크)
+   - ICD-11, ICNP 코드는 공란 (교수자가 WHO ICD-11 Browser / ICN 공식 자료로 입력)
+   - SNOMED CT ID·부모(is-a)는 SNOMED CT International Edition 2026-11-01 릴리스
+     (Snowstorm 서버)에서 활성 개념임을 대조했으나, 규칙에 따라 verified:false 유지
+   - KCD-9 한글명·장·블록명은 제안값이며 국가데이터처(구 통계청) KCD-9 원문으로 확인 필요
+   ========================================================= */
+const TERMINOLOGY_DATA = [
+  {"id":"C001","concept_ko":"제2형 당뇨병","concept_en":"Type 2 diabetes mellitus","category":"내분비","concept_type":"disorder","kcd9":{"code":"E11","name":"2형 당뇨병","chapter":"IV 내분비, 영양 및 대사 질환","block":"E10–E14 당뇨병","verified":false},"icd10":{"code":"E11","name":"Type 2 diabetes mellitus","verified":false},"icd11":{"code":"","name":"","verified":false},"snomed":{"id":"44054006","fsn":"Diabetes mellitus type 2 (disorder)","pt":"Type 2 diabetes mellitus","term_ko":"2형 당뇨병","semantic_tag":"disorder","parents":[{"id":"73211009","term":"Diabetes mellitus"}],"verified":false},"icnp":{"code":"","name":"","suggested_name":"혈당 불안정 위험","verified":false},"nursing_note":"간호사정 시 연관 개념: 혈당 모니터링, 저혈당 위험, 발 관리 교육","local_terms":["DM","NIDDM","T2DM","당뇨","당뇨병","2형당뇨"],"teaching_point":"SNOMED CT Korean Extension(2026-06-15 릴리스)에 한글 선호어 “2형 당뇨병”이 등재되어 있습니다(서버 조회 확인). 약어 “DM”만으로는 1형/2형 구분이 안 되는 점에 주의하세요."},
+  {"id":"C002","concept_ko":"저혈당","concept_en":"Hypoglycemia","category":"내분비","concept_type":"disorder","kcd9":{"code":"E16.2","name":"상세불명의 저혈당증","chapter":"IV 내분비, 영양 및 대사 질환","block":"E15–E16 포도당 조절 및 췌장 내분비의 기타 장애","verified":false},"icd10":{"code":"E16.2","name":"Hypoglycaemia, unspecified","verified":false},"icd11":{"code":"","name":"","verified":false},"snomed":{"id":"302866003","fsn":"Hypoglycemia (disorder)","pt":"Hypoglycemia","term_ko":"","semantic_tag":"disorder","parents":[{"id":"362969004","term":"Disorder of endocrine system"},{"id":"237630007","term":"Hypoglycemic disorder"}],"verified":false},"icnp":{"code":"","name":"","suggested_name":"저혈당","verified":false},"nursing_note":"저혈당 처치(예: 15-15 규칙) 후 재측정, 의식수준·발한·떨림 관찰","local_terms":["hypoglycemia","저혈당","low BS","혈당저하"],"teaching_point":"당뇨병 환자의 저혈당은 ICD/KCD 포함·제외 지침에 따라 E16.2가 아닌 당뇨병 범주로 분류될 수 있습니다. “분류는 규칙, 용어는 표현”의 차이를 보여주는 예입니다(KCD 지침 확인 필요)."},
+  {"id":"C003","concept_ko":"갑상선기능저하증","concept_en":"Hypothyroidism","category":"내분비","concept_type":"disorder","kcd9":{"code":"E03.9","name":"상세불명의 갑상선기능저하증","chapter":"IV 내분비, 영양 및 대사 질환","block":"E00–E07 갑상선의 장애","verified":false},"icd10":{"code":"E03.9","name":"Hypothyroidism, unspecified","verified":false},"icd11":{"code":"","name":"","verified":false},"snomed":{"id":"40930008","fsn":"","pt":"Hypothyroidism","term_ko":"","semantic_tag":"disorder","parents":[{"id":"14304000","term":"Disorder of thyroid gland"}],"verified":false},"icnp":{"code":"","name":"","suggested_name":"피로","verified":false},"nursing_note":"피로·추위 불내성 관찰, 갑상선호르몬제 공복 복용 교육","local_terms":["hypothyroidism","갑저","갑상선저하"],"teaching_point":""},
+  {"id":"C004","concept_ko":"본태성 고혈압","concept_en":"Essential hypertension","category":"심혈관","concept_type":"disorder","kcd9":{"code":"I10","name":"본태성(원발성) 고혈압","chapter":"IX 순환계통의 질환","block":"I10–I15 고혈압성 질환","verified":false},"icd10":{"code":"I10","name":"Essential (primary) hypertension","verified":false},"icd11":{"code":"","name":"","verified":false},"snomed":{"id":"59621000","fsn":"Essential hypertension (disorder)","pt":"Essential hypertension","term_ko":"","semantic_tag":"disorder","parents":[{"id":"38341003","term":"Hypertensive disorder"}],"verified":false},"icnp":{"code":"","name":"","suggested_name":"혈압 상승","verified":false},"nursing_note":"정확한 혈압 측정법, 투약 이행, 저염식 교육","local_terms":["HTN","고혈압","high BP","EHT"],"teaching_point":""},
+  {"id":"C005","concept_ko":"급성 심근경색","concept_en":"Acute myocardial infarction","category":"심혈관","concept_type":"disorder","kcd9":{"code":"I21","name":"급성 심근경색증","chapter":"IX 순환계통의 질환","block":"I20–I25 허혈성 심장질환","verified":false},"icd10":{"code":"I21","name":"Acute myocardial infarction","verified":false},"icd11":{"code":"","name":"","verified":false},"snomed":{"id":"57054005","fsn":"Acute myocardial infarction (disorder)","pt":"Acute myocardial infarction","term_ko":"","semantic_tag":"disorder","parents":[{"id":"413439005","term":"Acute ischemic heart disease"},{"id":"22298006","term":"Myocardial infarction"}],"verified":false},"icnp":{"code":"","name":"","suggested_name":"심박출량 감소","verified":false},"nursing_note":"흉통 양상(NRS), 12유도 심전도, 활력징후 모니터링","local_terms":["AMI","MI","심근경색","STEMI","NSTEMI"],"teaching_point":""},
+  {"id":"C006","concept_ko":"심부전","concept_en":"Heart failure","category":"심혈관","concept_type":"disorder","kcd9":{"code":"I50","name":"심부전","chapter":"IX 순환계통의 질환","block":"I30–I52 기타 형태의 심장병","verified":false},"icd10":{"code":"I50","name":"Heart failure","verified":false},"icd11":{"code":"","name":"","verified":false},"snomed":{"id":"84114007","fsn":"Heart failure (disorder)","pt":"Heart failure","term_ko":"","semantic_tag":"disorder","parents":[{"id":"105981003","term":"Disorder of cardiac function"}],"verified":false},"icnp":{"code":"","name":"","suggested_name":"체액 과다","verified":false},"nursing_note":"일일 체중·섭취배설량, 부종, 호흡곤란(기좌호흡) 관찰","local_terms":["HF","CHF","심부전","심부전증"],"teaching_point":""},
+  {"id":"C007","concept_ko":"심방세동","concept_en":"Atrial fibrillation","category":"심혈관","concept_type":"disorder","kcd9":{"code":"I48","name":"심방세동 및 조동","chapter":"IX 순환계통의 질환","block":"I30–I52 기타 형태의 심장병","verified":false},"icd10":{"code":"I48","name":"Atrial fibrillation and flutter","verified":false},"icd11":{"code":"","name":"","verified":false},"snomed":{"id":"49436004","fsn":"Atrial fibrillation (disorder)","pt":"Atrial fibrillation","term_ko":"","semantic_tag":"disorder","parents":[{"id":"17366009","term":"Atrial arrhythmia"},{"id":"40593004","term":"Fibrillation"},{"id":"6456007","term":"Supraventricular tachycardia"}],"verified":false},"icnp":{"code":"","name":"","suggested_name":"심박출량 감소 위험","verified":false},"nursing_note":"맥박 불규칙성(심첨-요골 맥박), 항응고제 출혈 위험 관찰","local_terms":["AF","Af","A-fib","심방세동"],"teaching_point":"ICD-10 I48은 “심방세동 및 조동”을 한 범주로 묶지만, SNOMED CT에서 심방세동은 부모가 3개인 다중 부모 개념입니다."},
+  {"id":"C008","concept_ko":"폐렴","concept_en":"Pneumonia","category":"호흡기","concept_type":"disorder","kcd9":{"code":"J18","name":"상세불명 병원체의 폐렴","chapter":"X 호흡계통의 질환","block":"J09–J18 인플루엔자 및 폐렴","verified":false},"icd10":{"code":"J18","name":"Pneumonia, organism unspecified","verified":false},"icd11":{"code":"","name":"","verified":false},"snomed":{"id":"233604007","fsn":"Pneumonia (disorder)","pt":"Pneumonia","term_ko":"","semantic_tag":"disorder","parents":[{"id":"128601007","term":"Infectious disease of lung"},{"id":"205237003","term":"Pneumonitis"}],"verified":false},"icnp":{"code":"","name":"","suggested_name":"기도청결 손상","verified":false},"nursing_note":"호흡음·객담, 산소포화도, 기도청결 유지(기침·심호흡)","local_terms":["pneumonia","폐렴","PN"],"teaching_point":""},
+  {"id":"C009","concept_ko":"만성폐쇄성폐질환","concept_en":"Chronic obstructive pulmonary disease","category":"호흡기","concept_type":"disorder","kcd9":{"code":"J44","name":"기타 만성 폐쇄성 폐질환","chapter":"X 호흡계통의 질환","block":"J40–J47 만성 하기도질환","verified":false},"icd10":{"code":"J44","name":"Other chronic obstructive pulmonary disease","verified":false},"icd11":{"code":"","name":"","verified":false},"snomed":{"id":"13645005","fsn":"Chronic obstructive pulmonary disease (disorder)","pt":"Chronic obstructive pulmonary disease","term_ko":"","semantic_tag":"disorder","parents":[{"id":"17097001","term":"Chronic disease of respiratory system"},{"id":"233776003","term":"Tracheobronchial disorder"}],"verified":false},"icnp":{"code":"","name":"","suggested_name":"가스교환 장애","verified":false},"nursing_note":"호흡양상, 저유량 산소요법 주의, 흡입기 사용법 교육","local_terms":["COPD","만성폐쇄성폐질환","만폐","COLD"],"teaching_point":""},
+  {"id":"C010","concept_ko":"천식","concept_en":"Asthma","category":"호흡기","concept_type":"disorder","kcd9":{"code":"J45","name":"천식","chapter":"X 호흡계통의 질환","block":"J40–J47 만성 하기도질환","verified":false},"icd10":{"code":"J45","name":"Asthma","verified":false},"icd11":{"code":"","name":"","verified":false},"snomed":{"id":"195967001","fsn":"","pt":"Asthma","term_ko":"","semantic_tag":"disorder","parents":[{"id":"50043002","term":"Disorder of respiratory system"}],"verified":false},"icnp":{"code":"","name":"","suggested_name":"호흡 양상 손상","verified":false},"nursing_note":"천명음·최대호기유속, 유발요인 회피, 흡입기 교육","local_terms":["asthma","천식","BA"],"teaching_point":""},
+  {"id":"C011","concept_ko":"뇌경색","concept_en":"Cerebral infarction","category":"신경","concept_type":"disorder","kcd9":{"code":"I63","name":"뇌경색증","chapter":"IX 순환계통의 질환","block":"I60–I69 뇌혈관질환","verified":false},"icd10":{"code":"I63","name":"Cerebral infarction","verified":false},"icd11":{"code":"","name":"","verified":false},"snomed":{"id":"432504007","fsn":"","pt":"Cerebral infarction","term_ko":"","semantic_tag":"disorder","parents":[{"id":"609410002","term":"Necrosis of anatomical site"},{"id":"389100007","term":"Ischemic encephalopathy"}],"verified":false},"icnp":{"code":"","name":"","suggested_name":"신체 기동성 손상","verified":false},"nursing_note":"신경학적 사정(GCS·동공), 연하곤란 선별, 낙상 예방","local_terms":["cerebral infarction","뇌경색","CI","infarct"],"teaching_point":"“뇌졸중(stroke)”은 뇌경색보다 넓은 개념입니다. 로컬 용어 매핑 시 상·하위 개념을 혼동하지 않도록 주의하세요. 또한 ICD에서 뇌경색은 신경계(VI장)가 아니라 순환계통(IX장)에 분류됩니다."},
+  {"id":"C012","concept_ko":"치매","concept_en":"Dementia","category":"신경","concept_type":"disorder","kcd9":{"code":"F03","name":"상세불명의 치매","chapter":"V 정신 및 행동 장애","block":"F00–F09 증상성을 포함하는 기질성 정신장애","verified":false},"icd10":{"code":"F03","name":"Unspecified dementia","verified":false},"icd11":{"code":"","name":"","verified":false},"snomed":{"id":"52448006","fsn":"","pt":"Dementia","term_ko":"","semantic_tag":"disorder","parents":[{"id":"386806002","term":"Impaired cognition"},{"id":"111479008","term":"Organic mental disorder"}],"verified":false},"icnp":{"code":"","name":"","suggested_name":"기억력 손상","verified":false},"nursing_note":"인지기능 사정, 안전한 환경 조성, 보호자 교육","local_terms":["dementia","치매"],"teaching_point":""},
+  {"id":"C013","concept_ko":"섬망","concept_en":"Delirium","category":"신경","concept_type":"disorder","kcd9":{"code":"F05","name":"알코올 및 기타 정신활성물질에 의해 유발되지 않은 섬망","chapter":"V 정신 및 행동 장애","block":"F00–F09 증상성을 포함하는 기질성 정신장애","verified":false},"icd10":{"code":"F05","name":"Delirium, not induced by alcohol and other psychoactive substances","verified":false},"icd11":{"code":"","name":"","verified":false},"snomed":{"id":"2776000","fsn":"","pt":"Delirium","term_ko":"","semantic_tag":"disorder","parents":[{"id":"286933003","term":"Confusional state"}],"verified":false},"icnp":{"code":"","name":"","suggested_name":"급성 혼돈","verified":false},"nursing_note":"급성 발생·주의력 변동 관찰(CAM 등 도구), 지남력 제공, 수면 증진","local_terms":["delirium","섬망"],"teaching_point":""},
+  {"id":"C014","concept_ko":"패혈증","concept_en":"Sepsis","category":"감염","concept_type":"disorder","kcd9":{"code":"A41","name":"기타 패혈증","chapter":"I 특정 감염성 및 기생충성 질환","block":"A30–A49 기타 세균성 질환","verified":false},"icd10":{"code":"A41","name":"Other sepsis","verified":false},"icd11":{"code":"","name":"","verified":false},"snomed":{"id":"91302008","fsn":"","pt":"Sepsis","term_ko":"","semantic_tag":"disorder","parents":[{"id":"414029004","term":"Disorder of immune function"},{"id":"363169009","term":"Inflammation of specific body organs"},{"id":"238147009","term":"Organ dysfunction syndrome"}],"verified":false},"icnp":{"code":"","name":"","suggested_name":"쇼크 위험","verified":false},"nursing_note":"조기 경고 징후(활력징후·의식), 수액·항생제 투여 시간 준수","local_terms":["sepsis","패혈증"],"teaching_point":""},
+  {"id":"C015","concept_ko":"요로감염","concept_en":"Urinary tract infection","category":"감염","concept_type":"disorder","kcd9":{"code":"N39.0","name":"부위가 명시되지 않은 요로감염","chapter":"XIV 비뇨생식계통의 질환","block":"N30–N39 비뇨계통의 기타 질환","verified":false},"icd10":{"code":"N39.0","name":"Urinary tract infection, site not specified","verified":false},"icd11":{"code":"","name":"","verified":false},"snomed":{"id":"68566005","fsn":"","pt":"Urinary tract infectious disease","term_ko":"","semantic_tag":"disorder","parents":[{"id":"189176002","term":"Infectious disease of genitourinary system"},{"id":"128606002","term":"Disorder of urinary system"}],"verified":false},"icnp":{"code":"","name":"","suggested_name":"감염","verified":false},"nursing_note":"배뇨 양상·소변 성상, 유치도뇨관 필요성 매일 재평가","local_terms":["UTI","요로감염"],"teaching_point":""},
+  {"id":"C016","concept_ko":"코로나19","concept_en":"COVID-19","category":"감염","concept_type":"disorder","kcd9":{"code":"U07.1","name":"코로나바이러스감염증-19, 바이러스가 확인된 경우","chapter":"XXII 특수목적 코드","block":"U00–U49 불확실한 병인의 신종질환의 임시 지정","verified":false},"icd10":{"code":"U07.1","name":"COVID-19, virus identified","verified":false},"icd11":{"code":"","name":"","verified":false},"snomed":{"id":"840539006","fsn":"","pt":"COVID-19","term_ko":"","semantic_tag":"disorder","parents":[{"id":"186747009","term":"Coronavirus infection"}],"verified":false},"icnp":{"code":"","name":"","suggested_name":"감염 전파 위험","verified":false},"nursing_note":"격리·개인보호구 착용, 산소포화도 모니터링","local_terms":["COVID-19","코로나","코로나19","SARS-CoV-2"],"teaching_point":"ICD-10의 U코드(XXII장)는 신종질환에 임시로 부여하는 특수목적 코드입니다. 분류체계도 새 질환에 대응해 개정됩니다."},
+  {"id":"C017","concept_ko":"욕창(압박손상)","concept_en":"Pressure injury","category":"피부","concept_type":"disorder","kcd9":{"code":"L89","name":"욕창궤양 및 압박부위","chapter":"XII 피부 및 피하조직의 질환","block":"L80–L99 피부 및 피하조직의 기타 장애","verified":false},"icd10":{"code":"L89","name":"Decubitus ulcer and pressure area","verified":false},"icd11":{"code":"","name":"","verified":false},"snomed":{"id":"1163215007","fsn":"Pressure injury (disorder)","pt":"Pressure injury","term_ko":"","semantic_tag":"disorder","parents":[{"id":"282026002","term":"Injury of soft tissue"},{"id":"239953001","term":"Lesion of soft tissue"}],"verified":false},"icnp":{"code":"","name":"","suggested_name":"압박손상(욕창)","verified":false},"nursing_note":"욕창 위험도 사정(예: Braden), 단계 평가, 체위변경·피부 관리","local_terms":["bedsore","bed sore","욕창","PU","PI","압박궤양","압박손상","decubitus"],"teaching_point":"기존 SNOMED CT 개념 Pressure ulcer(399912005)는 현재 비활성(inactive) 상태이며, 본 앱은 활성 개념 Pressure injury(1163215007)를 사용합니다(2026-11 International 릴리스 조회). 표준용어는 계속 개정되므로 원본 확인이 필수입니다."},
+  {"id":"C018","concept_ko":"봉와직염","concept_en":"Cellulitis","category":"피부","concept_type":"disorder","kcd9":{"code":"L03","name":"연조직염","chapter":"XII 피부 및 피하조직의 질환","block":"L00–L08 피부 및 피하조직의 감염","verified":false},"icd10":{"code":"L03","name":"Cellulitis","verified":false},"icd11":{"code":"","name":"","verified":false},"snomed":{"id":"128045006","fsn":"","pt":"Cellulitis","term_ko":"","semantic_tag":"disorder","parents":[{"id":"128139000","term":"Inflammatory disorder"}],"verified":false},"icnp":{"code":"","name":"","suggested_name":"피부 통합성 손상","verified":false},"nursing_note":"발적 범위 표시·관찰, 체온, 해당 부위 거상","local_terms":["cellulitis","봉와직염","연조직염"],"teaching_point":""},
+  {"id":"C019","concept_ko":"골다공증","concept_en":"Osteoporosis","category":"근골격","concept_type":"disorder","kcd9":{"code":"M81","name":"병적 골절이 없는 골다공증","chapter":"XIII 근골격계통 및 결합조직의 질환","block":"M80–M85 골밀도 및 구조의 장애","verified":false},"icd10":{"code":"M81","name":"Osteoporosis without pathological fracture","verified":false},"icd11":{"code":"","name":"","verified":false},"snomed":{"id":"64859006","fsn":"","pt":"Osteoporosis","term_ko":"","semantic_tag":"disorder","parents":[{"id":"363054006","term":"Degenerative disorder of bone"}],"verified":false},"icnp":{"code":"","name":"","suggested_name":"낙상 위험","verified":false},"nursing_note":"낙상 예방, 칼슘·비타민 D 섭취, 체중부하 운동 교육","local_terms":["osteoporosis","골다공증"],"teaching_point":""},
+  {"id":"C020","concept_ko":"무릎 골관절염","concept_en":"Osteoarthritis of knee","category":"근골격","concept_type":"disorder","kcd9":{"code":"M17","name":"무릎관절증","chapter":"XIII 근골격계통 및 결합조직의 질환","block":"M15–M19 관절증","verified":false},"icd10":{"code":"M17","name":"Gonarthrosis [arthrosis of knee]","verified":false},"icd11":{"code":"","name":"","verified":false},"snomed":{"id":"239873007","fsn":"","pt":"Osteoarthritis of knee","term_ko":"","semantic_tag":"disorder","parents":[{"id":"396275006","term":"Osteoarthritis"},{"id":"371081002","term":"Arthritis of knee"},{"id":"363056008","term":"Degenerative disorder of extremity"}],"verified":false},"icnp":{"code":"","name":"","suggested_name":"만성 통증","verified":false},"nursing_note":"통증·관절 가동범위 사정, 보조기구 사용 교육","local_terms":["OA knee","퇴행성관절염","무릎관절염","골관절염"],"teaching_point":""},
+  {"id":"C021","concept_ko":"대퇴골 경부 골절","concept_en":"Fracture of neck of femur","category":"손상","concept_type":"disorder","kcd9":{"code":"S72.0","name":"대퇴골 경부의 골절","chapter":"XIX 손상, 중독 및 외인에 의한 특정 기타 결과","block":"S70–S79 엉덩이 및 대퇴의 손상","verified":false},"icd10":{"code":"S72.0","name":"Fracture of neck of femur","verified":false},"icd11":{"code":"","name":"","verified":false},"snomed":{"id":"5913000","fsn":"","pt":"Fracture of neck of femur","term_ko":"","semantic_tag":"disorder","parents":[{"id":"263225007","term":"Fracture of proximal end of femur"}],"verified":false},"icnp":{"code":"","name":"","suggested_name":"신체 기동성 손상","verified":false},"nursing_note":"신경혈관 상태 사정, 통증 관리, 수술 전후 간호","local_terms":["Fx femur neck","대퇴경부골절","hip fx","고관절골절"],"teaching_point":""},
+  {"id":"C022","concept_ko":"낙상","concept_en":"Fall","category":"손상","concept_type":"event","kcd9":{"code":"W19","name":"상세불명의 낙상","chapter":"XX 질병이환 및 사망의 외인","block":"W00–W19 낙상","verified":false},"icd10":{"code":"W19","name":"Unspecified fall","verified":false},"icd11":{"code":"","name":"","verified":false},"snomed":{"id":"1912002","fsn":"","pt":"Fall","term_ko":"","semantic_tag":"event","parents":[{"id":"83208000","term":"Exposure to mechanical force"}],"verified":false},"icnp":{"code":"","name":"","suggested_name":"낙상","verified":false},"nursing_note":"낙상 발생 시 즉시 손상 평가, 보고, 재발 방지 계획","local_terms":["fall","fall down","낙상","넘어짐"],"teaching_point":"ICD-10에서 낙상(W19)은 질병이 아닌 “외인(XX장)” 코드로, 손상 코드(예: S72.0)와 함께 사용합니다. SNOMED CT에서는 event 계층의 개념입니다."},
+  {"id":"C023","concept_ko":"낙상 위험 증가","concept_en":"At increased risk for falls","category":"손상","concept_type":"finding","kcd9":{"code":"","name":"","chapter":"","block":"","verified":false},"icd10":{"code":"","name":"","verified":false},"icd11":{"code":"","name":"","verified":false},"snomed":{"id":"129839007","fsn":"","pt":"At increased risk for falls","term_ko":"","semantic_tag":"finding","parents":[{"id":"1255669001","term":"At increased risk for exposure to potentially harmful entity"}],"verified":false},"icnp":{"code":"","name":"","suggested_name":"낙상 위험","verified":false},"nursing_note":"낙상 위험 사정도구(예: Morse) 점수, 침상 난간·호출벨 교육","local_terms":["낙상위험","high fall risk","낙상고위험"],"teaching_point":"“위험 상태”는 질병이 아니므로 WHO ICD-10에는 대응 범주가 없습니다. 반면 SNOMED CT와 ICNP는 이를 표현할 수 있어 간호기록에 적합합니다."},
+  {"id":"C024","concept_ko":"통증","concept_en":"Pain","category":"증상","concept_type":"finding","kcd9":{"code":"R52","name":"달리 분류되지 않은 통증","chapter":"XVIII 달리 분류되지 않은 증상, 징후와 임상 및 검사의 이상소견","block":"R50–R69 전신 증상 및 징후","verified":false},"icd10":{"code":"R52","name":"Pain, not elsewhere classified","verified":false},"icd11":{"code":"","name":"","verified":false},"snomed":{"id":"22253000","fsn":"","pt":"Pain","term_ko":"","semantic_tag":"finding","parents":[{"id":"276435006","term":"Pain / sensation finding"}],"verified":false},"icnp":{"code":"","name":"","suggested_name":"급성 통증","verified":false},"nursing_note":"통증 척도(NRS 등)로 강도·부위·양상 사정 및 재평가","local_terms":["pain","통증","아픔","NRS"],"teaching_point":""},
+  {"id":"C025","concept_ko":"발열","concept_en":"Fever","category":"증상","concept_type":"finding","kcd9":{"code":"R50.9","name":"상세불명의 열","chapter":"XVIII 달리 분류되지 않은 증상, 징후와 임상 및 검사의 이상소견","block":"R50–R69 전신 증상 및 징후","verified":false},"icd10":{"code":"R50.9","name":"Fever, unspecified","verified":false},"icd11":{"code":"","name":"","verified":false},"snomed":{"id":"386661006","fsn":"","pt":"Fever","term_ko":"","semantic_tag":"finding","parents":[{"id":"50177009","term":"Body temperature above reference range"}],"verified":false},"icnp":{"code":"","name":"","suggested_name":"고체온","verified":false},"nursing_note":"체온 측정 경로 기록, 해열 처치 후 재측정, 수분 섭취","local_terms":["fever","febrile","발열","열","고열"],"teaching_point":""},
+  {"id":"C026","concept_ko":"오심","concept_en":"Nausea","category":"증상","concept_type":"finding","kcd9":{"code":"R11","name":"구역 및 구토","chapter":"XVIII 달리 분류되지 않은 증상, 징후와 임상 및 검사의 이상소견","block":"R10–R19 소화계통 및 복부에 관한 증상 및 징후","verified":false},"icd10":{"code":"R11","name":"Nausea and vomiting","verified":false},"icd11":{"code":"","name":"","verified":false},"snomed":{"id":"422587007","fsn":"","pt":"Nausea","term_ko":"","semantic_tag":"finding","parents":[{"id":"386618008","term":"Gastrointestinal tract finding"}],"verified":false},"icnp":{"code":"","name":"","suggested_name":"오심","verified":false},"nursing_note":"오심 유발요인, 구토 동반 여부, 수분·전해질 균형","local_terms":["nausea","오심","메스꺼움","구역"],"teaching_point":"ICD-10 R11은 “오심 및 구토”를 한 범주로 묶지만, SNOMED CT는 오심(422587007)을 독립 개념으로 표현합니다. 분류는 묶고, 용어는 세분합니다."},
+  {"id":"C027","concept_ko":"호흡곤란","concept_en":"Dyspnea","category":"증상","concept_type":"finding","kcd9":{"code":"R06.0","name":"호흡곤란","chapter":"XVIII 달리 분류되지 않은 증상, 징후와 임상 및 검사의 이상소견","block":"R00–R09 순환계통 및 호흡계통에 관한 증상 및 징후","verified":false},"icd10":{"code":"R06.0","name":"Dyspnoea","verified":false},"icd11":{"code":"","name":"","verified":false},"snomed":{"id":"267036007","fsn":"","pt":"Dyspnea","term_ko":"","semantic_tag":"finding","parents":[{"id":"230145002","term":"Difficulty breathing"}],"verified":false},"icnp":{"code":"","name":"","suggested_name":"호흡곤란","verified":false},"nursing_note":"호흡수·산소포화도, 보조근 사용, 체위(좌위) 적용","local_terms":["dyspnea","SOB","DOE","호흡곤란","숨참"],"teaching_point":""},
+  {"id":"C028","concept_ko":"혈당 측정","concept_en":"Blood glucose measurement","category":"절차","concept_type":"procedure","kcd9":{"code":"","name":"","chapter":"","block":"","verified":false},"icd10":{"code":"","name":"","verified":false},"icd11":{"code":"","name":"","verified":false},"snomed":{"id":"33747003","fsn":"","pt":"Glucose measurement, blood","term_ko":"","semantic_tag":"procedure","parents":[{"id":"785673007","term":"Measurement of level of substance in blood"},{"id":"36048009","term":"Glucose measurement"}],"verified":false},"icnp":{"code":"","name":"","suggested_name":"혈당 모니터링(중재)","verified":false},"nursing_note":"측정 시각(식전/식후), 결과값과 처치 기록","local_terms":["BST","혈당측정","glucose check","혈당체크"],"teaching_point":"혈당 측정은 “행위(procedure)”입니다. 질병 분류인 ICD에는 자리가 없지만, SNOMED CT는 procedure 계층에서 표현합니다."},
+  {"id":"C029","concept_ko":"유치도뇨관 삽입","concept_en":"Insertion of indwelling urinary catheter","category":"절차","concept_type":"procedure","kcd9":{"code":"","name":"","chapter":"","block":"","verified":false},"icd10":{"code":"","name":"","verified":false},"icd11":{"code":"","name":"","verified":false},"snomed":{"id":"446583004","fsn":"Insertion of indwelling catheter into urinary bladder (procedure)","pt":"Insertion of indwelling catheter into urinary bladder","term_ko":"","semantic_tag":"procedure","parents":[{"id":"410024004","term":"Insertion of catheter into urinary bladder"}],"verified":false},"icnp":{"code":"","name":"","suggested_name":"유치도뇨관 관리(중재)","verified":false},"nursing_note":"무균술 준수, 삽입 날짜 기록, CAUTI 예방 번들","local_terms":["Foley","Foley insertion","유치도뇨","도뇨관삽입","F/C"],"teaching_point":""},
+  {"id":"C030","concept_ko":"침상 체위변경","concept_en":"Turning patient in bed","category":"절차","concept_type":"procedure","kcd9":{"code":"","name":"","chapter":"","block":"","verified":false},"icd10":{"code":"","name":"","verified":false},"icd11":{"code":"","name":"","verified":false},"snomed":{"id":"359962006","fsn":"Turning patient in bed (procedure)","pt":"Turning patient in bed","term_ko":"","semantic_tag":"procedure","parents":[{"id":"359965008","term":"Moving a patient in bed"}],"verified":false},"icnp":{"code":"","name":"","suggested_name":"체위변경(중재)","verified":false},"nursing_note":"2시간 간격 등 체위변경 계획, 피부 압박 부위 관찰","local_terms":["체위변경","position change","turning","P/C"],"teaching_point":""}
+];
+</script>
+<script>
+(function(){
+'use strict';
+/* =========================================================
+   Utilities
+   ========================================================= */
+const $ = (s, el=document) => el.querySelector(s);
+const $$ = (s, el=document) => Array.from(el.querySelectorAll(s));
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const clone = o => JSON.parse(JSON.stringify(o));
+const shuffle = arr => { const a = arr.slice(); for (let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; } return a; };
+
+/* ---------- Safe storage (모든 read/write try/catch + 메모리 폴백) ---------- */
+const Store = (() => {
+  const mem = {};
+  let ok = false;
+  try { const k='__nte_probe__'; window.localStorage.setItem(k,'1'); window.localStorage.removeItem(k); ok = true; } catch(e) { ok = false; }
+  return {
+    available: () => ok,
+    get(key, def){
+      try { if (ok) { const v = window.localStorage.getItem(key); if (v !== null) return JSON.parse(v); } } catch(e) {}
+      return Object.prototype.hasOwnProperty.call(mem,key) ? clone(mem[key]) : def;
+    },
+    set(key, val){
+      try { mem[key] = clone(val); } catch(e) {}
+      try { if (ok) window.localStorage.setItem(key, JSON.stringify(val)); } catch(e) {}
+    },
+    remove(key){
+      delete mem[key];
+      try { if (ok) window.localStorage.removeItem(key); } catch(e) {}
+    }
+  };
+})();
+const KEYS = { verify:'nte.verify.v1', vsubs:'nte.vsubs.v1', data:'nte.data.v1', progress:'nte.progress.v1', quiz:'nte.quiz.v1', pin:'nte.pin.v1', theme:'nte.theme.v1', tab:'nte.tab.v1' };
+
+function toast(msg){
+  const t = $('#toast'); t.textContent = msg; t.classList.add('show');
+  clearTimeout(toast._t); toast._t = setTimeout(()=>t.classList.remove('show'), 2600);
+}
+
+/* =========================================================
+   Data layer
+   ========================================================= */
+const STD_KEYS = ['kcd9','icd10','icd11','snomed','icnp'];
+const STANDARDS = {
+  kcd9:{ label:'KCD-9', full:'한국표준질병·사인분류 제9차', kind:'분류체계 (Classification)', org:'국가데이터처 (2025.10.1. 통계청에서 승격·개편)', use:'2026년부터 시행. 사망·질병 통계, 진료기록 진단 코딩, 건강보험 청구에 사용. ICD-10 기반에 국내 실정을 반영해 세분화.' },
+  icd10:{ label:'ICD-10', full:'국제질병분류 제10차 (WHO)', kind:'분류체계 (Classification)', org:'세계보건기구(WHO)', use:'국제 질병·사망 통계 비교의 기준. 국내에서는 KCD를 통해 사용.' },
+  icd11:{ label:'ICD-11', full:'국제질병분류 제11차 (WHO)', kind:'분류체계 (디지털 기반, 확장코드 조합 지원)', org:'세계보건기구(WHO)', use:'2022.1.1 WHO 발효. 국내는 2031년경 이행 예정(계획 변경 가능). 코드는 WHO ICD-11 Browser로 확인.' },
+  snomed:{ label:'SNOMED CT', full:'Systematized Nomenclature of Medicine — Clinical Terms', kind:'임상용어체계 (Terminology)', org:'SNOMED International', use:'EHR의 임상 표현·상호운용성·의사결정지원. 한국은 2020년 회원국 가입. 질병뿐 아니라 소견·절차·사건 등 임상 표현 전반.' },
+  icnp:{ label:'ICNP', full:'International Classification for Nursing Practice', kind:'간호용어체계 (Terminology)', org:'국제간호협의회(ICN)', use:'간호진단·간호결과·간호중재의 표준 표현. 코드는 ICN 공식 자료로 교수자가 입력.' }
+};
+const TYPE_LABEL = { disorder:'질환 disorder', finding:'소견 finding', procedure:'절차 procedure', event:'사건 event' };
+const SNOMED_ROOTS = {
+  disorder:{ id:'404684003', term:'Clinical finding' }, finding:{ id:'404684003', term:'Clinical finding' },
+  procedure:{ id:'71388002', term:'Procedure' }, event:{ id:'272379006', term:'Event' }
+};
+
+function normalizeConcept(c){
+  const d = clone(c);
+  const sub = (k, extra) => { d[k] = Object.assign({ code:'', name:'', verified:false }, extra||{}, d[k]||{}); d[k].verified = !!d[k].verified; };
+  sub('kcd9', { chapter:'', block:'' }); sub('icd10'); sub('icd11'); sub('icnp', { suggested_name:'' });
+  d.snomed = Object.assign({ id:'', fsn:'', pt:'', term_ko:'', semantic_tag:'', parents:[], verified:false }, d.snomed||{});
+  d.snomed.verified = !!d.snomed.verified;
+  d.snomed.parents = (Array.isArray(d.snomed.parents) ? d.snomed.parents : []).map(p => typeof p === 'string' ? { id:'', term:p } : { id:String(p.id||''), term:String(p.term||'') });
+  d.local_terms = Array.isArray(d.local_terms) ? d.local_terms.map(String) : [];
+  d.concept_type = TYPE_LABEL[d.concept_type] ? d.concept_type : 'disorder';
+  ['concept_ko','concept_en','category','nursing_note','teaching_point'].forEach(k => d[k] = String(d[k] ?? ''));
+  d.id = String(d.id);
+  return d;
+}
+function validConcept(c){ return c && typeof c === 'object' && typeof c.id === 'string' && c.id && typeof c.concept_ko === 'string'; }
+function loadData(){
+  const saved = Store.get(KEYS.data, null);
+  if (Array.isArray(saved) && saved.length && saved.every(validConcept)) { try { return saved.map(normalizeConcept); } catch(e) {} }
+  return TERMINOLOGY_DATA.map(normalizeConcept);
+}
+let DATA = loadData();
+function saveData(){ Store.set(KEYS.data, DATA); }
+const DEFAULT_BY_ID = Object.fromEntries(TERMINOLOGY_DATA.map(c => [c.id, c]));
+function getConcept(id){
+  return DATA.find(c => c.id === id) || (DEFAULT_BY_ID[id] ? normalizeConcept(DEFAULT_BY_ID[id]) : null);
+}
+const codeOf = (c, k) => k === 'snomed' ? c.snomed.id : c[k].code;
+
+/* ---------- 한글 초성 검색 ---------- */
+const CHO = ['ㄱ','ㄲ','ㄴ','ㄷ','ㄸ','ㄹ','ㅁ','ㅂ','ㅃ','ㅅ','ㅆ','ㅇ','ㅈ','ㅉ','ㅊ','ㅋ','ㅌ','ㅍ','ㅎ'];
+function chosung(s){
+  return Array.from(String(s)).map(ch => { const n = ch.charCodeAt(0) - 0xAC00; return (n >= 0 && n < 11172) ? CHO[Math.floor(n/588)] : ch; }).join('');
+}
+const norm = s => String(s||'').toLowerCase().replace(/[\s\-–·.,()\/\[\]_:]/g,'');
+function searchConcepts(q){
+  const raw = String(q||'').trim();
+  if (!raw) return DATA.slice();
+  const qn = norm(raw);
+  if (!qn) return DATA.slice();
+  const choOnly = /^[ㄱ-ㅎ]+$/.test(qn);
+  const scored = DATA.map(c => {
+    const fields = [c.concept_ko, c.concept_en, ...c.local_terms, c.kcd9.code, c.kcd9.name, c.icd10.code, c.icd10.name, c.icd11.code,
+                    c.snomed.id, c.snomed.fsn, c.snomed.pt, c.snomed.term_ko, c.icnp.code, c.icnp.name, c.icnp.suggested_name];
+    let score = 0;
+    for (const f of fields){
+      if (!f) continue;
+      if (choOnly){
+        const fc = norm(chosung(f));
+        if (fc.startsWith(qn)) score = Math.max(score, 3); else if (fc.includes(qn)) score = Math.max(score, 2);
+      } else {
+        const fn = norm(f);
+        if (fn === qn) score = Math.max(score, 5);
+        else if (fn.startsWith(qn)) score = Math.max(score, 4);
+        else if (fn.includes(qn)) score = Math.max(score, 2);
+      }
+    }
+    return { c, score };
+  }).filter(x => x.score > 0);
+  scored.sort((a,b) => b.score - a.score || a.c.id.localeCompare(b.c.id));
+  return scored.map(x => x.c);
+}
+
+/* =========================================================
+   Progress
+   ========================================================= */
+const TAB_IDS = ['rosetta','hierarchy','interop','records','quiz','overview','verify'];
+let progress = Object.assign({ tabs:{}, viewed:{}, interop:false, records:{}, quiz:false }, Store.get(KEYS.progress, {}) || {});
+['tabs','viewed','records'].forEach(k => { if (!progress[k] || typeof progress[k] !== 'object') progress[k] = {}; });
+function saveProgress(){ Store.set(KEYS.progress, progress); renderProgress(); }
+function progressItems(){
+  const viewedN = Object.keys(progress.viewed).length;
+  return [
+    ...TAB_IDS.map(t => ({ label:`${$('#tab-'+t).textContent.trim()} 탭 방문`, done:!!progress.tabs[t] })),
+    { label:`개념 10개 이상 살펴보기 (${Math.min(viewedN,10)}/10)`, done: viewedN >= 10 },
+    { label:'상호운용성 매핑 완성', done: !!progress.interop },
+    ...RECORDS.map(r => ({ label:`간호기록 ${r.id}: ${r.title}`, done: !!progress.records[r.id] })),
+    { label:'퀴즈 1회 이상 완료', done: !!progress.quiz },
+    { label:'검증 미션 5건 이상 판정', done: !!progress.verify }
+  ];
+}
+function renderProgress(){
+  const items = progressItems();
+  const pct = Math.round(items.filter(i=>i.done).length / items.length * 100);
+  $('#progressText').textContent = pct + '%';
+  $('#progressBar').style.width = pct + '%';
+  $('#progressBtn').setAttribute('aria-label', `학습 진도 ${pct}% — 자세히 보기`);
+}
+
+/* =========================================================
+   Modal
+   ========================================================= */
+function openModal({ title, html, narrow=false, onMount }){
+  const root = $('#modalRoot');
+  const prev = document.activeElement;
+  root.innerHTML = `<div class="modal-back" data-close="1"><div class="modal ${narrow?'narrow':''}" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+    <div class="modal-head"><h3 id="modalTitle">${esc(title)}</h3><button class="icon-btn" type="button" data-close="1" aria-label="닫기">✕</button></div>
+    <div class="modal-body">${html}</div></div></div>`;
+  const back = root.firstElementChild;
+  const close = () => { root.innerHTML = ''; document.removeEventListener('keydown', onKey); if (prev && prev.focus) prev.focus(); };
+  const onKey = e => {
+    if (e.key === 'Escape') close();
+    if (e.key === 'Tab'){ // 간단 포커스 트랩
+      const f = $$('button,input,select,textarea,a[href],[tabindex]:not([tabindex="-1"])', back).filter(x=>!x.disabled);
+      if (!f.length) return;
+      if (e.shiftKey && document.activeElement === f[0]) { e.preventDefault(); f[f.length-1].focus(); }
+      else if (!e.shiftKey && document.activeElement === f[f.length-1]) { e.preventDefault(); f[0].focus(); }
+    }
+  };
+  back.addEventListener('click', e => { if (e.target.dataset && e.target.dataset.close) close(); });
+  document.addEventListener('keydown', onKey);
+  if (onMount) onMount(back, close);
+  const first = $('input,select,textarea', back) || $('button', back);
+  if (first) first.focus();
+  return close;
+}
+
+/* =========================================================
+   Theme
+   ========================================================= */
+function applyTheme(t){
+  document.documentElement.dataset.theme = t;
+  const b = $('#themeBtn');
+  b.textContent = t === 'dark' ? '☀️' : '🌙';
+  b.setAttribute('aria-label', t === 'dark' ? '라이트 모드로 전환' : '다크 모드로 전환');
+}
+(function initTheme(){
+  let t = Store.get(KEYS.theme, null);
+  if (t !== 'dark' && t !== 'light') {
+    t = (window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches) ? 'light' : 'dark';
+  }
+  applyTheme(t);
+})();
+$('#themeBtn').addEventListener('click', () => {
+  const t = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
+  applyTheme(t); Store.set(KEYS.theme, t);
+});
+
+/* =========================================================
+   Tabs
+   ========================================================= */
+let instructor = false;
+const renderers = {};
+function visibleTabs(){ return $$('.tab').filter(t => !t.hidden); }
+function activateTab(id, focus=false){
+  if (id === 'admin' && !instructor) id = 'rosetta';
+  if (!$('#tab-'+id)) id = 'rosetta';
+  $$('.tab').forEach(t => {
+    const on = t.id === 'tab-'+id;
+    t.setAttribute('aria-selected', on ? 'true' : 'false');
+    t.tabIndex = on ? 0 : -1;
+    if (on && focus) t.focus();
+    if (on) t.scrollIntoView({ block:'nearest', inline:'nearest' });
+  });
+  $$('[role=tabpanel]').forEach(p => p.hidden = p.id !== 'panel-'+id);
+  if (TAB_IDS.includes(id)) { progress.tabs[id] = true; saveProgress(); Store.set(KEYS.tab, id); }
+  if (renderers[id]) renderers[id]();
+}
+function scrollToMain(){ const y = $('#main').getBoundingClientRect().top + window.scrollY - 120; if (window.scrollY > y) window.scrollTo({ top: Math.max(0,y) }); }
+$('.tabs').addEventListener('click', e => { const t = e.target.closest('.tab'); if (t) { activateTab(t.id.replace('tab-','')); scrollToMain(); } });
+$('.tabs').addEventListener('keydown', e => {
+  const tabs = visibleTabs(); const i = tabs.indexOf(document.activeElement); if (i < 0) return;
+  let n = null;
+  if (e.key === 'ArrowRight') n = (i+1) % tabs.length;
+  else if (e.key === 'ArrowLeft') n = (i-1+tabs.length) % tabs.length;
+  else if (e.key === 'Home') n = 0; else if (e.key === 'End') n = tabs.length-1;
+  if (n !== null){ e.preventDefault(); activateTab(tabs[n].id.replace('tab-',''), true); }
+});
+
+/* =========================================================
+   1. Rosetta View
+   ========================================================= */
+const R = { sel:'C001', q:'', cat:'전체', type:'전체' };
+function renderFilters(){
+  const cats = ['전체', ...Array.from(new Set(DATA.map(c => c.category).filter(Boolean)))];
+  $('#catFilters').innerHTML = cats.map(c => `<button type="button" class="chip" data-cat="${esc(c)}" aria-pressed="${R.cat===c}">${esc(c)}</button>`).join('');
+  const types = ['전체','disorder','finding','procedure','event'];
+  $('#typeFilters').innerHTML = types.map(t => `<button type="button" class="chip" data-type="${t}" aria-pressed="${R.type===t}">${t==='전체'?'모든 유형':esc(TYPE_LABEL[t])}</button>`).join('');
+}
+function renderResults(){
+  let list = searchConcepts(R.q);
+  if (R.cat !== '전체') list = list.filter(c => c.category === R.cat);
+  if (R.type !== '전체') list = list.filter(c => c.concept_type === R.type);
+  $('#resultCount').textContent = `검색 결과 ${list.length}개` + (R.q ? ` · “${R.q}”` : '');
+  $('#resultList').innerHTML = list.length ? list.map(c => `<li><button type="button" class="result" data-id="${esc(c.id)}" aria-pressed="${c.id===R.sel}">
+      <div class="t">${esc(c.concept_ko)} <span class="type-badge">${esc(c.concept_type)}</span></div>
+      <div class="e">${esc(c.concept_en)}</div>
+      <div class="codes"><span class="std kcd9">${esc(c.kcd9.code||'—')}</span><span class="std snomed">${esc(c.snomed.id||'—')}</span></div>
+    </button></li>`).join('') : `<li class="muted small">결과가 없습니다. 다른 표현(약어·영문·초성)으로 검색해 보세요.</li>`;
+}
+function emptyReason(c, k){
+  if (k === 'icnp') return 'ICNP 코드는 ICN 공식 자료(ICNP Browser)로 교수자가 입력합니다.';
+  if (k === 'icd11') {
+    if (!c.kcd9.code && !c.icd10.code && c.concept_type !== 'disorder') return 'ICD는 질병·사인 “분류”입니다. 이 소견/절차 개념에 대응하는 범주가 없을 수 있습니다. 교수자가 WHO ICD-11 Browser로 확인합니다.';
+    return '미입력: WHO ICD-11 Browser(icd.who.int)에서 확인 후 교수자가 입력합니다.';
+  }
+  if (k === 'snomed') return '미입력';
+  if (c.concept_type === 'procedure') return 'ICD는 질병·사인 “분류”라 시술·간호행위(procedure)를 다루지 않습니다. 국내에서는 별도의 행위분류 체계가 쓰입니다.';
+  if (c.concept_type === 'finding') return '“위험 상태”와 같은 소견은 질병이 아니므로 이 분류에 대응 범주가 없습니다.';
+  return '미입력 (교수자 확인 필요)';
+}
+function verifiedBadge(v){
+  return v ? `<span class="vbadge ver" title="교수자가 공식 원본으로 확인함">✓ 검증 완료</span>` : `<span class="vbadge unv" title="공식 원본으로 확인되지 않은 학습용 값">⚠ 검증 필요</span>`;
+}
+function stdCard(c, k){
+  const m = STANDARDS[k], d = c[k], code = codeOf(c,k);
+  let name = d.name, extra = '';
+  if (k === 'snomed'){
+    name = d.fsn || (d.pt ? `${d.pt}${d.semantic_tag ? ' ('+d.semantic_tag+')' : ''}` : '');
+    extra = (d.fsn && d.pt && d.pt !== d.fsn ? `<div class="ex">선호어(PT): ${esc(d.pt)}</div>` : '')
+          + (d.term_ko ? `<div class="ex">한국어(Korean Extension): ${esc(d.term_ko)}</div>` : '')
+          + (d.parents.length ? `<div class="ex">is-a 부모 ${d.parents.length}개: ${d.parents.map(p=>esc(p.term)).join(' · ')}</div>` : '');
+  }
+  if (k === 'kcd9' && code) extra = `<div class="ex">${esc(d.chapter)}${d.block ? '<br>블록 '+esc(d.block) : ''}</div>`;
+  if (k === 'icnp') extra = d.suggested_name ? `<div class="ex">제안 개념명: <b>${esc(d.suggested_name)}</b> (ICN 공식 용어로 확인 필요)</div>` : '';
+  const tipId = 'tip-'+k;
+  return `<article class="std-card ${k}" aria-label="${esc(m.label)} 카드">
+    <div class="top"><span class="std ${k}">${esc(m.label)}</span>
+      <span class="tip"><button type="button" class="tip-btn" aria-label="${esc(m.label)} 표준 설명" aria-describedby="${tipId}">i</button>
+      <span class="tip-body" role="tooltip" id="${tipId}"><b>${esc(m.full)}</b><br>성격: ${esc(m.kind)}<br>관리기관: ${esc(m.org)}<br>국내 사용처: ${esc(m.use)}</span></span></div>
+    <div class="kind">${esc(m.kind)}</div>
+    ${code ? `<div class="code-big">${esc(code)}</div>` : `<div class="code-empty">— 코드 없음/미입력</div>`}
+    ${name ? `<div class="nm">${esc(name)}</div>` : ''}
+    ${extra}
+    ${!code ? `<div class="why">${esc(emptyReason(c,k))}</div>` : ''}
+    <div class="foot">${verifiedBadge(d.verified)}
+      <button type="button" class="btn sm admin-only" data-verify="${k}" aria-pressed="${d.verified}">${d.verified ? '검증 해제' : '검증 완료로 표시'}</button></div>
+  </article>`;
+}
+function insightHTML(c){
+  const parts = [];
+  const icd = c.kcd9.code || c.icd10.code;
+  const np = c.snomed.parents.length;
+  if (icd && c.snomed.id){
+    parts.push(`<b>분류(KCD/ICD)</b>: <code>${esc(icd)}</code>은(는) “${esc(c.kcd9.block || '해당 블록')}” 한 곳에만 속합니다. ` +
+      `<b>용어(SNOMED CT)</b>: <code>${esc(c.snomed.id)}</code>은(는) is-a 부모가 <b>${np}개</b>${np>1?' — 다중 부모(polyhierarchy)':''}입니다.`);
+  } else if (!icd && c.snomed.id){
+    parts.push(`이 개념은 <b>ICD 분류에 자리가 없지만</b> SNOMED CT에서는 <b>${esc(c.snomed.semantic_tag||c.concept_type)}</b> 계층의 개념으로 표현됩니다. → “ICD는 질병 분류, SNOMED CT는 임상 표현 전반”`);
+  }
+  if (c.teaching_point) parts.push(esc(c.teaching_point));
+  return parts.length ? `<div class="insight">💡 ${parts.join('<br><br>💡 ')}</div>` : '';
+}
+function renderDetail(){
+  const c = getConcept(R.sel) || DATA[0];
+  if (!c){ $('#conceptDetail').innerHTML = '<p class="muted">데이터가 없습니다.</p>'; return; }
+  R.sel = c.id;
+  if (!progress.viewed[c.id]) { progress.viewed[c.id] = true; saveProgress(); }
+  $('#conceptDetail').innerHTML = `
+    <div class="concept-head">
+      <div><div class="small muted mono">${esc(c.id)} · ${esc(c.category)}</div>
+        <h2>${esc(c.concept_ko)}</h2><div class="en">${esc(c.concept_en)}</div></div>
+      <span class="type-badge" title="SNOMED CT 계층 유형">${esc(TYPE_LABEL[c.concept_type])}</span>
+    </div>
+    <div class="local-terms" aria-label="로컬 용어·약어">${c.local_terms.map(t=>`<span class="chip">${esc(t)}</span>`).join('')}</div>
+    <p class="small" style="margin-top:10px">🩺 <b>간호 연관</b>: ${esc(c.nursing_note)}</p>
+    <div class="std-grid">${STD_KEYS.map(k => stdCard(c,k)).join('')}</div>
+    ${insightHTML(c)}`;
+}
+renderers.rosetta = () => { renderFilters(); renderResults(); renderDetail(); };
+$('#searchInput').addEventListener('input', e => {
+  R.q = e.target.value; renderResults();
+  const first = $('#resultList .result');
+  if (first && R.q.trim()) { R.sel = first.dataset.id; renderDetail(); $$('#resultList .result').forEach(b => b.setAttribute('aria-pressed', b.dataset.id===R.sel)); }
+});
+$('#catFilters').addEventListener('click', e => { const b = e.target.closest('[data-cat]'); if (!b) return; R.cat = b.dataset.cat; renderFilters(); renderResults(); });
+$('#typeFilters').addEventListener('click', e => { const b = e.target.closest('[data-type]'); if (!b) return; R.type = b.dataset.type; renderFilters(); renderResults(); });
+$('#resultList').addEventListener('click', e => {
+  const b = e.target.closest('.result'); if (!b) return;
+  R.sel = b.dataset.id; $$('#resultList .result').forEach(x => x.setAttribute('aria-pressed', x===b)); renderDetail();
+  if (window.innerWidth < 900) $('#conceptDetail').scrollIntoView({ behavior:'smooth', block:'start' });
+});
+$('#conceptDetail').addEventListener('click', e => {
+  const b = e.target.closest('[data-verify]'); if (!b || !instructor) return;
+  const c = DATA.find(x => x.id === R.sel); if (!c) return;
+  const k = b.dataset.verify;
+  c[k].verified = !c[k].verified;
+  if (k === 'icd10' || k === 'kcd9') {} // 각 표준 독립 검증
+  saveData(); renderDetail(); toast(`${STANDARDS[k].label} 검증 상태: ${c[k].verified ? '검증 완료' : '검증 필요'}`);
+});
+
+/* =========================================================
+   2. Hierarchy
+   ========================================================= */
+const H = { sel:'C007' };
+const ROMAN = { I:1,V:5,X:10,L:50,C:100 };
+function romanVal(s){
+  const m = String(s||'').trim().match(/^([IVXLC]+)\s/); if (!m) return 999;
+  let v=0, prev=0; for (const ch of m[1].split('').reverse()){ const n = ROMAN[ch]||0; v += n < prev ? -n : n; prev = Math.max(prev,n); } return v;
+}
+function renderIcdTree(){
+  const chapters = {};
+  const outside = [];
+  DATA.forEach(c => {
+    const code = c.kcd9.code || c.icd10.code;
+    if (!code){ outside.push(c); return; }
+    const ch = c.kcd9.chapter || '장 미지정', bl = c.kcd9.block || '블록 미지정';
+    ((chapters[ch] ||= {})[bl] ||= []).push(c);
+  });
+  const chKeys = Object.keys(chapters).sort((a,b) => romanVal(a) - romanVal(b) || a.localeCompare(b));
+  let html = chKeys.map(ch => {
+    const blocks = chapters[ch];
+    return `<details open><summary><b>${esc(ch)}</b></summary>${Object.keys(blocks).sort().map(bl => `
+      <details open><summary>${esc(bl)}</summary>
+      ${blocks[bl].sort((a,b)=>(a.kcd9.code||a.icd10.code).localeCompare(b.kcd9.code||b.icd10.code)).map(c => `<button type="button" class="leaf" data-id="${esc(c.id)}" aria-pressed="${c.id===H.sel}"><code>${esc(c.kcd9.code||c.icd10.code)}</code><span>${esc(c.kcd9.name || c.concept_ko)}</span></button>`).join('')}
+      </details>`).join('')}</details>`;
+  }).join('');
+  if (outside.length){
+    html += `<div class="outside"><b>ICD 분류 체계 밖의 개념</b><p class="small">아래 개념은 ICD(질병 분류)에 대응 범주가 없지만 SNOMED CT에는 있습니다.</p>
+      ${outside.map(c => `<button type="button" class="leaf" style="margin-left:0;width:100%" data-id="${esc(c.id)}" aria-pressed="${c.id===H.sel}"><code>—</code><span>${esc(c.concept_ko)} <span class="type-badge">${esc(c.concept_type)}</span></span></button>`).join('')}</div>`;
+  }
+  $('#icdTree').innerHTML = html;
+}
+function wrapText(s, max){
+  const words = String(s).split(' '); const lines = []; let cur = '';
+  words.forEach(w => { if ((cur+' '+w).trim().length > max && cur){ lines.push(cur); cur = w; } else cur = (cur+' '+w).trim(); });
+  if (cur) lines.push(cur);
+  if (lines.length > 3){ lines.length = 3; lines[2] = lines[2].replace(/.{0,2}$/, '…'); }
+  return lines;
+}
+function svgNode(x, y, w, term, id, cls){
+  const lines = wrapText(term, Math.floor(w/7.2));
+  const h = 22 + lines.length*16 + (id?14:0);
+  const top = y - h/2;
+  let t = `<rect class="${cls}" x="${x-w/2}" y="${top}" width="${w}" height="${h}" rx="10"/>`;
+  lines.forEach((ln,i) => t += `<text class="n-text" x="${x}" y="${top+20+i*16}" text-anchor="middle">${esc(ln)}</text>`);
+  if (id) t += `<text class="n-id" x="${x}" y="${top+20+lines.length*16}" text-anchor="middle">${esc(id)}</text>`;
+  return { svg:t, top, bottom: top+h };
+}
+function renderSnomedSvg(){
+  const c = getConcept(H.sel) || DATA[0]; if (!c) return;
+  H.sel = c.id;
+  $('#hierSelect').value = c.id;
+  const W = 680, H0 = 380;
+  const parents = c.snomed.parents;
+  const multi = parents.length > 1;
+  const root = SNOMED_ROOTS[c.concept_type] || SNOMED_ROOTS.disorder;
+  const yRoot = 46, yPar = 180, yC = 318;
+  let body = '';
+  const rootN = svgNode(W/2, yRoot, 220, `${root.term} (최상위 계층)`, root.id, 'n-root');
+  body += rootN.svg;
+  const n = Math.max(parents.length,1), gap = 14;
+  const pw = Math.min(210, (W - 24 - (n-1)*gap) / n);
+  const x0 = (W - (n*pw + (n-1)*gap)) / 2 + pw/2;
+  const pNodes = parents.map((p,i) => { const x = x0 + i*(pw+gap); const nd = svgNode(x, yPar, pw, p.term, p.id, 'n-rect'); return Object.assign(nd,{x}); });
+  const cN = svgNode(W/2, yC, 250, c.snomed.pt || c.concept_en, c.snomed.id, 'n-focus' + (multi ? ' n-multi' : ''));
+  let edges = '';
+  pNodes.forEach(p => {
+    edges += `<path class="edge dashed" d="M${p.x},${p.top} L${W/2},${rootN.bottom}"/>`;
+    edges += `<path class="edge ${multi?'multi':''}" marker-end="url(#${multi?'arrM':'arr'})" d="M${W/2},${cN.top} C${W/2},${(cN.top+p.bottom)/2} ${p.x},${(cN.top+p.bottom)/2} ${p.x},${p.bottom+4}"/>`;
+    edges += `<text class="e-label" x="${(p.x+W/2)/2}" y="${(cN.top+p.bottom)/2 - 4}" text-anchor="middle">is-a</text>`;
+  });
+  if (!pNodes.length) edges += `<path class="edge dashed" d="M${W/2},${cN.top} L${W/2},${rootN.bottom}"/>`;
+  edges += `<text class="e-label" x="${W/2 + 118}" y="${rootN.bottom + 18}">⋯ 중간 계층 생략</text>`;
+  body = edges + body + pNodes.map(p=>p.svg).join('') + cN.svg;
+  if (multi) body += `<text class="banner" x="${W-12}" y="${H0-10}" text-anchor="end">★ 다중 부모 ${parents.length}개 (polyhierarchy)</text>`;
+  const label = `${c.concept_ko}의 SNOMED CT 계층: 부모 ${parents.map(p=>p.term).join(', ') || '없음'}; 최상위 ${root.term}`;
+  $('#snomedSvg').innerHTML = `<svg viewBox="0 0 ${W} ${H0}" role="img" aria-label="${esc(label)}">
+    <defs><marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path class="arrow" d="M0,0 L10,5 L0,10 z"/></marker>
+    <marker id="arrM" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path class="arrow-multi" d="M0,0 L10,5 L0,10 z"/></marker></defs>${body}</svg>`;
+  const icd = c.kcd9.code || c.icd10.code;
+  $('#hierCompare').innerHTML = `
+    <div><h4><span class="std kcd9">분류</span> KCD/ICD 경로</h4>${icd
+      ? `<div class="path">${esc(c.kcd9.chapter)}<br>→ ${esc(c.kcd9.block)}<br>→ <b>${esc(icd)}</b> ${esc(c.kcd9.name)}</div><p class="small muted">경로는 <b>단 하나</b>입니다(상호배타성).</p>`
+      : `<p class="small"><b>경로 없음</b> — ICD 분류에 자리가 없는 ${esc(TYPE_LABEL[c.concept_type])} 개념입니다.</p>`}</div>
+    <div><h4><span class="std snomed">용어</span> SNOMED CT 부모</h4>
+      <div class="path">${parents.map(p=>`↑ ${esc(p.term)} <span class="muted">${esc(p.id)}</span>`).join('<br>') || '—'}</div>
+      <p class="small muted">${multi ? `<b>${parents.length}개 관점</b>에서 동시에 분류됩니다. 검색·통계 시 어느 상위 개념으로 질의해도 이 개념이 포함됩니다.` : '이 개념은 부모가 1개입니다. 금색 칩의 개념과 비교해 보세요.'}</p></div>`;
+  $$('#icdTree .leaf').forEach(b => b.setAttribute('aria-pressed', b.dataset.id === H.sel));
+}
+function renderHierarchy(){
+  $('#hierSelect').innerHTML = DATA.map(c => `<option value="${esc(c.id)}">${esc(c.concept_ko)} (${esc(c.snomed.id||'—')})${c.snomed.parents.length>1?' ★':''}</option>`).join('');
+  $('#multiChips').innerHTML = '<span class="small muted">다중 부모 예시:</span> ' + DATA.filter(c => c.snomed.parents.length > 1)
+    .map(c => `<button type="button" class="chip" data-id="${esc(c.id)}" style="border-color:var(--gold)">★ ${esc(c.concept_ko)} (${c.snomed.parents.length})</button>`).join('');
+  renderIcdTree(); renderSnomedSvg();
+}
+renderers.hierarchy = renderHierarchy;
+$('#hierSelect').addEventListener('change', e => { H.sel = e.target.value; renderSnomedSvg(); });
+$('#icdTree').addEventListener('click', e => { const b = e.target.closest('.leaf'); if (!b) return; H.sel = b.dataset.id; renderSnomedSvg(); });
+$('#multiChips').addEventListener('click', e => { const b = e.target.closest('[data-id]'); if (!b) return; H.sel = b.dataset.id; renderSnomedSvg(); });
+
+/* =========================================================
+   3. Interoperability simulator
+   ========================================================= */
+const INTEROP_TERMS = [
+  { id:'A1', h:'A', term:'DM, 혈당조절 불량', ans:'C001', n:34 },
+  { id:'A2', h:'A', term:'HTN', ans:'C004', n:52 },
+  { id:'A3', h:'A', term:'Bed sore Gr.2 (sacrum)', ans:'C017', n:6 },
+  { id:'A4', h:'A', term:'Fall down (병실 내)', ans:'C022', n:3 },
+  { id:'A5', h:'A', term:'SOB 호소', ans:'C027', n:11 },
+  { id:'A6', h:'A', term:'febrile (38.4℃)', ans:'C025', n:9 },
+  { id:'B1', h:'B', term:'당뇨병 (2형)', ans:'C001', n:41 },
+  { id:'B2', h:'B', term:'고혈압(본태성)', ans:'C004', n:47 },
+  { id:'B3', h:'B', term:'천골부 압박손상 2단계', ans:'C017', n:8 },
+  { id:'B4', h:'B', term:'낙상 발생', ans:'C022', n:5 },
+  { id:'B5', h:'B', term:'숨참, 호흡곤란', ans:'C027', n:13 },
+  { id:'B6', h:'B', term:'고열', ans:'C025', n:7 }
+];
+const INTEROP_TARGETS = ['C001','C002','C004','C017','C022','C023','C025','C027'];
+const IO = { map:{}, selected:null, checked:false };
+function renderInterop(){
+  const termBtn = t => {
+    const cls = IO.checked ? (IO.map[t.id] === t.ans ? 'right' : 'wrong') : '';
+    return `<button type="button" class="term ${t.h.toLowerCase()} ${cls}" draggable="true" data-term="${t.id}" aria-pressed="${IO.selected===t.id}"
+      aria-label="병원 ${t.h} 로컬 용어 ${esc(t.term)}${IO.map[t.id] ? ', 매핑됨 — 누르면 해제' : ''}">${esc(t.term)}</button>`;
+  };
+  $('#poolA').innerHTML = INTEROP_TERMS.filter(t => t.h==='A' && !IO.map[t.id]).map(termBtn).join('') || '<span class="small muted">모두 매핑됨 ✓</span>';
+  $('#poolB').innerHTML = INTEROP_TERMS.filter(t => t.h==='B' && !IO.map[t.id]).map(termBtn).join('') || '<span class="small muted">모두 매핑됨 ✓</span>';
+  $('#targets').innerHTML = INTEROP_TARGETS.map(id => {
+    const c = getConcept(id); if (!c) return '';
+    const mapped = INTEROP_TERMS.filter(t => IO.map[t.id] === id);
+    return `<div class="target ${IO.selected ? 'ready' : ''}" data-target="${id}" role="button" tabindex="0" aria-label="표준코드 ${esc(c.concept_ko)} SNOMED CT ${esc(c.snomed.id)}${IO.selected?' — 선택한 용어를 여기에 매핑':''}">
+      <div><span class="std snomed">SNOMED CT</span> <span class="tid">${esc(c.snomed.id)}</span></div>
+      <div><b>${esc(c.snomed.pt)}</b></div>
+      <div class="small muted">${esc(c.concept_ko)} · KCD ${esc(c.kcd9.code || '—')}</div>
+      <div class="drop">${mapped.map(termBtn).join('')}</div></div>`;
+  }).join('');
+}
+function assign(termId, targetId){
+  if (!termId || !targetId) return;
+  IO.map[termId] = targetId; IO.selected = null; IO.checked = false; $('#interopResult').innerHTML = '';
+  renderInterop();
+  const done = Object.keys(IO.map).length;
+  toast(`매핑 ${done}/${INTEROP_TERMS.length}`);
+}
+function onTermActivate(termId){
+  if (IO.map[termId]){ delete IO.map[termId]; IO.checked = false; IO.selected = null; $('#interopResult').innerHTML=''; renderInterop(); toast('매핑을 해제했습니다'); return; }
+  IO.selected = IO.selected === termId ? null : termId;
+  renderInterop();
+  if (IO.selected) { const tgt = $('#targets .target'); toast('이제 알맞은 표준코드 카드를 선택하세요'); if (tgt && document.activeElement && document.activeElement.classList.contains('term')) {} }
+  const again = $(`[data-term="${termId}"]`); if (again) again.focus();
+}
+$('#panel-interop').addEventListener('click', e => {
+  const term = e.target.closest('.term');
+  if (term){ e.stopPropagation(); onTermActivate(term.dataset.term); return; }
+  const tgt = e.target.closest('.target');
+  if (tgt && IO.selected) assign(IO.selected, tgt.dataset.target);
+});
+$('#panel-interop').addEventListener('keydown', e => {
+  const tgt = e.target.closest && e.target.closest('.target');
+  if (tgt && e.target === tgt && (e.key === 'Enter' || e.key === ' ')){ e.preventDefault(); if (IO.selected) assign(IO.selected, tgt.dataset.target); else toast('먼저 로컬 용어를 선택하세요'); }
+});
+$('#panel-interop').addEventListener('dragstart', e => {
+  const term = e.target.closest && e.target.closest('.term'); if (!term) return;
+  try { e.dataTransfer.setData('text/plain', term.dataset.term); e.dataTransfer.effectAllowed = 'move'; } catch(err) {}
+});
+$('#panel-interop').addEventListener('dragover', e => { const t = e.target.closest && e.target.closest('.target'); if (t){ e.preventDefault(); t.classList.add('over'); } });
+$('#panel-interop').addEventListener('dragleave', e => { const t = e.target.closest && e.target.closest('.target'); if (t) t.classList.remove('over'); });
+$('#panel-interop').addEventListener('drop', e => {
+  const t = e.target.closest && e.target.closest('.target'); if (!t) return;
+  e.preventDefault(); t.classList.remove('over');
+  let id = ''; try { id = e.dataTransfer.getData('text/plain'); } catch(err) {}
+  if (INTEROP_TERMS.some(x => x.id === id)) assign(id, t.dataset.target);
+});
+$('#interopReset').addEventListener('click', () => { IO.map = {}; IO.selected = null; IO.checked = false; $('#interopResult').innerHTML = ''; renderInterop(); });
+$('#interopCheck').addEventListener('click', () => {
+  const n = Object.keys(IO.map).length;
+  if (n < INTEROP_TERMS.length){ toast(`모든 로컬 용어를 매핑하세요 (${n}/${INTEROP_TERMS.length})`); return; }
+  IO.checked = true; renderInterop();
+  const wrong = INTEROP_TERMS.filter(t => IO.map[t.id] !== t.ans);
+  const box = $('#interopResult');
+  if (!wrong.length){
+    progress.interop = true; saveProgress();
+    const groups = {};
+    INTEROP_TERMS.forEach(t => { (groups[t.ans] ||= { A:[], B:[] })[t.h].push(t); });
+    const sumA = INTEROP_TERMS.filter(t=>t.h==='A').reduce((s,t)=>s+t.n,0), sumB = INTEROP_TERMS.filter(t=>t.h==='B').reduce((s,t)=>s+t.n,0);
+    box.innerHTML = `<div class="success"><b>✅ 매핑 성공! 두 병원의 데이터가 표준코드 기준으로 통합되었습니다.</b>
+      <p class="small">표준 없이 문자열로 합치면 <b>${INTEROP_TERMS.length}개</b>의 서로 다른 항목이 생기지만, 표준코드로 합치면 <b>${Object.keys(groups).length}개</b> 임상 개념으로 정확히 집계됩니다.</p></div>
+      <div class="grid-2" style="margin-top:12px">
+        <div class="card anim-left"><h3>병원 A 원본 (환자 ${sumA}명)</h3><div class="table-scroll"><table class="data"><thead><tr><th>로컬 용어</th><th>환자 수</th></tr></thead><tbody>
+          ${INTEROP_TERMS.filter(t=>t.h==='A').map(t=>`<tr><td>${esc(t.term)}</td><td>${t.n}</td></tr>`).join('')}</tbody></table></div></div>
+        <div class="card anim-right"><h3>병원 B 원본 (환자 ${sumB}명)</h3><div class="table-scroll"><table class="data"><thead><tr><th>로컬 용어</th><th>환자 수</th></tr></thead><tbody>
+          ${INTEROP_TERMS.filter(t=>t.h==='B').map(t=>`<tr><td>${esc(t.term)}</td><td>${t.n}</td></tr>`).join('')}</tbody></table></div></div>
+      </div>
+      <div class="card" style="margin-top:14px"><h3>⬇ 통합 테이블 (SNOMED CT 기준)</h3><div class="table-scroll"><table class="data">
+        <thead><tr><th>SNOMED CT</th><th>개념</th><th>KCD</th><th>병원 A 원문</th><th>병원 B 원문</th><th>합계</th></tr></thead><tbody>
+        ${Object.keys(groups).map((id,i) => { const c = getConcept(id), g = groups[id]; const tot = [...g.A,...g.B].reduce((s,t)=>s+t.n,0);
+          return `<tr class="anim-row" style="animation-delay:${0.7 + i*0.18}s"><td class="mono">${esc(c.snomed.id)}</td><td>${esc(c.concept_ko)}</td><td class="mono">${esc(c.kcd9.code||'—')}</td>
+            <td>${g.A.map(t=>`${esc(t.term)} (${t.n})`).join('<br>')}</td><td>${g.B.map(t=>`${esc(t.term)} (${t.n})`).join('<br>')}</td><td><b>${tot}</b></td></tr>`; }).join('')}
+        </tbody></table></div><p class="small muted">※ 환자 수는 학습용 가상 수치입니다.</p></div>`;
+  } else {
+    box.innerHTML = `<div class="problem"><b>❌ ${wrong.length}개 매핑이 올바르지 않습니다.</b> 빨간색 용어를 눌러 해제한 뒤 다시 매핑하세요.
+      <ul>${wrong.map(t => { const to = getConcept(IO.map[t.id]), ok = getConcept(t.ans);
+        return `<li>병원 ${t.h} “${esc(t.term)}” → <b>${esc(to ? to.concept_ko : '?')}</b>로 매핑됨. 다른 병원의 “${esc(ok.concept_ko)}” 환자와 합쳐지지 못하고, 엉뚱한 개념의 통계에 섞입니다.</li>`; }).join('')}</ul>
+      <h4 style="margin:12px 0 4px">표준 없이는 어떤 문제가 생기는가?</h4>
+      <ul>
+        <li><b>통계 왜곡</b>: 같은 질환이 기관마다 다른 이름으로 집계되어 유병률·질 지표가 틀어집니다.</li>
+        <li><b>환자안전 위협</b>: 전원·협진 시 진단·위험 정보(예: 낙상 위험)가 누락되거나 오해됩니다.</li>
+        <li><b>임상의사결정지원(CDS) 실패</b>: “당뇨 환자에게 발 관리 알림” 같은 규칙이 다른 표현을 인식하지 못합니다.</li>
+        <li><b>연구·정책 데이터 통합 불가</b>: 다기관 연구, 국가 보건통계에 수작업 정제가 필요합니다.</li>
+        <li><b>청구·행정 오류</b>: 잘못된 코드는 삭감·재청구 등 행정 비용을 낳습니다.</li>
+      </ul></div>`;
+  }
+  box.scrollIntoView({ behavior:'smooth', block:'nearest' });
+});
+renderers.interop = renderInterop;
+
+/* =========================================================
+   4. Nursing record coding practice (완전 가상 사례)
+   ========================================================= */
+const RECORDS = [
+  { id:'R1', title:'당뇨 환자 저혈당 대응', meta:'가상 환자 #1 · 70대 여성 · 내과 병동 · 06:10 기록',
+    text:'06:00 [[혈당 측정|i1]] 결과 52 mg/dL. 식은땀과 손 떨림 동반한 [[저혈당|i2]] 증상 보여 [[주스 150 mL|d1]] 경구 섭취 제공함. 15분 후 재측정 108 mg/dL. 기저질환: [[DM|i3]], [[HTN|i4]]. [[담당의|d2]]에게 보고함.',
+    items:{
+      i1:{ c:'C028', opts:['C028','C001','C002','C025'], why:'BST·혈당 측정은 “행위(procedure)”입니다. 질병 분류인 ICD에는 코드가 없고, SNOMED CT 33747003(Glucose measurement, blood)로 표현합니다.' },
+      i2:{ c:'C002', opts:['C002','C001','C028','C013'], why:'혈당 52 mg/dL와 자율신경 증상은 임상 개념 “저혈당”(SNOMED 302866003)입니다. 단, 당뇨병 환자의 저혈당은 KCD 포함·제외 지침상 E16.2가 아닌 당뇨병 범주로 분류될 수 있어 실제 코딩은 지침 확인이 필요합니다.' },
+      i3:{ c:'C001', opts:['C001','C002','C003','C004'], why:'“DM”은 로컬 약어입니다. 기저질환 맥락상 2형 당뇨병(E11 / 44054006)으로 매핑했지만, 약어만으로는 1형/2형 구분이 안 되므로 실제 기록에서는 확인이 필요합니다.' },
+      i4:{ c:'C004', opts:['C004','C005','C006','C007'], why:'HTN = hypertension. 본태성 고혈압(I10 / 59621000).' }
+    },
+    distractors:{ d1:'투여한 물품·양은 중재의 세부 정보로, 이 실습의 진단·소견 코딩 대상이 아닙니다.', d2:'보고 대상(사람)은 임상 개념 코딩 대상이 아닙니다.' } },
+  { id:'R2', title:'야간 낙상과 골절', meta:'가상 환자 #2 · 80대 남성 · 정형외과 병동 · 22:50 기록',
+    text:'22:40 야간 화장실 이동 중 [[낙상|i1]] 발생. 우측 고관절 부위 [[통증|i2]] NRS 7점 호소. [[X-ray|d1]] 결과 [[우측 대퇴골 경부 골절|i3]] 확인됨. 입원 시 Morse 낙상척도 55점으로 [[낙상 고위험|i4]] 상태였음.',
+    items:{
+      i1:{ c:'C022', opts:['C022','C023','C021','C024'], why:'낙상은 “사건(event)”입니다. ICD-10에서는 질병이 아닌 외인 코드(W19, XX장)로 손상 코드와 함께 쓰며, SNOMED CT는 1912002(Fall)입니다.' },
+      i2:{ c:'C024', opts:['C024','C020','C021','C025'], why:'통증은 소견(finding): R52 / 22253000. 진단 코딩에서는 원인(골절)이 우선되지만, 간호기록에서는 통증 자체가 사정·중재 대상입니다.' },
+      i3:{ c:'C021', opts:['C021','C019','C020','C022'], why:'대퇴골 경부 골절: S72.0 / 5913000. ICD에서는 손상(XIX장)에 속합니다.' },
+      i4:{ c:'C023', opts:['C023','C022','C021','C019'], why:'“낙상 위험”은 아직 일어나지 않은 위험 상태입니다. WHO ICD-10에는 대응 범주가 없지만 SNOMED CT는 129839007(At increased risk for falls)로 표현합니다. 낙상(사건)과 구분하세요.' }
+    },
+    distractors:{ d1:'X-ray는 검사 행위이지만, 이 실습에서는 진단·간호 핵심 개념으로 다루지 않습니다.' } },
+  { id:'R3', title:'와상 환자 피부·배뇨 관리', meta:'가상 환자 #3 · 70대 여성 · 요양병동 · 14:00 기록',
+    text:'장기 와상 환자. [[천골 부위|d1]]에 2단계 [[욕창|i1]] 관찰됨(2×3 cm). 2시간 간격 [[체위변경|i2]] 시행. 배뇨 관리를 위해 처방에 따라 [[유치도뇨관 삽입|i3]] 시행함. 삽입 후 [[소변 300 mL|d2]] 배출.',
+    items:{
+      i1:{ c:'C017', opts:['C017','C018','C024','C019'], why:'Pressure injury: L89 / 1163215007. 과거 SNOMED CT 개념 Pressure ulcer(399912005)는 현재 비활성 상태입니다.' },
+      i2:{ c:'C030', opts:['C030','C017','C029','C028'], why:'체위변경은 간호중재(procedure)입니다. ICD 코드는 없고, SNOMED CT 359962006(Turning patient in bed)로 표현합니다.' },
+      i3:{ c:'C029', opts:['C029','C015','C030','C028'], why:'유치도뇨관 삽입은 procedure: SNOMED CT 446583004. 이후 요로감염(CAUTI) 예방이 중요합니다.' }
+    },
+    distractors:{ d1:'천골 부위는 신체 구조(부위)입니다. SNOMED CT에서는 “Finding site” 속성으로 개념에 연결되며, 독립된 진단 코드가 아닙니다.', d2:'측정값(배설량)은 관찰값으로, 이 실습의 코딩 대상이 아닙니다.' } },
+  { id:'R4', title:'COPD 환자의 폐렴', meta:'가상 환자 #4 · 60대 남성 · 호흡기내과 · 10:20 기록',
+    text:'[[COPD|i1]] 병력 있는 환자, 금일 [[호흡곤란|i2]] 및 [[발열|i3]](38.6℃) 호소. 흉부 X-ray상 우하엽 [[폐렴|i4]] 소견. [[비강 캐뉼라 2 L/min|d1]] 적용함.',
+    items:{
+      i1:{ c:'C009', opts:['C009','C010','C008','C027'], why:'COPD: J44 / 13645005. 천식(J45)과 구분합니다.' },
+      i2:{ c:'C027', opts:['C027','C009','C010','C008'], why:'호흡곤란은 증상(finding): R06.0 / 267036007.' },
+      i3:{ c:'C025', opts:['C025','C014','C008','C024'], why:'발열: R50.9 / 386661006. 원인 질환(폐렴)이 확정되면 진단 코딩에선 원인 질환이 우선될 수 있습니다.' },
+      i4:{ c:'C008', opts:['C008','C009','C016','C014'], why:'폐렴(원인균 미상): J18 / 233604007. SNOMED CT에서는 부모가 2개인 다중 부모 개념입니다.' }
+    },
+    distractors:{ d1:'산소요법 장비·유량은 중재의 세부 정보로, 이 실습의 코딩 대상이 아닙니다.' } },
+  { id:'R5', title:'뇌경색 후 급성 혼돈', meta:'가상 환자 #5 · 80대 여성 · 신경과 병동 · 02:30 기록',
+    text:'[[뇌경색|i1]] 진단 후 입원 3일째. 야간에 지남력 저하와 초조 행동이 급격히 나타나 [[섬망|i2]] 의심되어 보고함. 과거력: [[치매|i3]], [[심방세동|i4]]. [[보호자|d1]] 상주 중.',
+    items:{
+      i1:{ c:'C011', opts:['C011','C005','C013','C012'], why:'뇌경색: I63 / 432504007. “뇌졸중”은 더 넓은 개념이므로 혼용에 주의하세요.' },
+      i2:{ c:'C013', opts:['C013','C012','C011','C023'], why:'급성 발생·변동성 → 섬망(F05 / 2776000). 만성 진행성인 치매와 구분하는 것이 간호의 핵심입니다.' },
+      i3:{ c:'C012', opts:['C012','C013','C011','C003'], why:'치매(상세불명): F03 / 52448006.' },
+      i4:{ c:'C007', opts:['C007','C005','C006','C004'], why:'심방세동: I48 / 49436004. 뇌경색의 위험요인이며, SNOMED CT에서 부모가 3개인 다중 부모 예시입니다.' }
+    },
+    distractors:{ d1:'보호자 상주는 사회적 맥락 정보로, 이 실습의 임상 코딩 대상이 아닙니다.' } },
+  { id:'R6', title:'요로감염에서 패혈증으로', meta:'가상 환자 #6 · 70대 남성 · 내과 병동 → 중환자실 · 18:40 기록',
+    text:'[[유치도뇨관|d1]] 유지 중이던 환자 소변 혼탁·악취 관찰되어 [[요로감염|i1]] 진단. 이후 오한 동반 [[발열|i2]] 39.2℃ 지속, 혈압 저하되어 [[패혈증|i3]] 진단으로 중환자실 전동. 전동 전 [[오심|i4]] 호소하여 처방된 항구토제 투여함.',
+    items:{
+      i1:{ c:'C015', opts:['C015','C014','C029','C025'], why:'요로감염(부위 미상): N39.0 / 68566005.' },
+      i2:{ c:'C025', opts:['C025','C014','C024','C026'], why:'발열: R50.9 / 386661006.' },
+      i3:{ c:'C014', opts:['C014','C015','C016','C008'], why:'패혈증: A41(기타 패혈증) / 91302008. SNOMED CT에서 부모가 3개인 다중 부모 개념입니다.' },
+      i4:{ c:'C026', opts:['C026','C024','C027','C025'], why:'오심: SNOMED CT 422587007. ICD-10 R11은 “오심 및 구토”를 한 범주로 묶습니다 — 분류는 묶고, 용어는 세분합니다.' }
+    },
+    distractors:{ d1:'이미 삽입되어 “유지 중”인 기구 상태입니다. 삽입 행위(procedure) 자체의 기록이 아니므로 이 문장에서는 핵심 코딩 대상이 아닙니다.' } }
+];
+const REC = { cur:'R1', active:null, state:{} }; // state[recId][itemId] = { done:bool, first:bool|null, tried:[] } ; distractor seen
+function recState(id){ return REC.state[id] ||= { items:{}, seenD:{}, order:{} }; }
+function parseRecord(r){
+  const out = []; const re = /\[\[(.+?)\|(\w+)\]\]/g; let last = 0, m;
+  while ((m = re.exec(r.text))){ if (m.index > last) out.push({ t:r.text.slice(last, m.index) }); out.push({ phrase:m[1], key:m[2] }); last = re.lastIndex; }
+  if (last < r.text.length) out.push({ t:r.text.slice(last) });
+  return out;
+}
+function renderRecTabs(){
+  $('#recTabs').innerHTML = RECORDS.map(r => `<button type="button" class="rec-tab" data-rec="${r.id}" aria-pressed="${r.id===REC.cur}">${r.id}. ${esc(r.title)} ${progress.records[r.id] ? '<span class="done" aria-label="완료">✓</span>' : ''}</button>`).join('');
+}
+function renderRecNote(){
+  const r = RECORDS.find(x => x.id === REC.cur); const st = recState(r.id);
+  const segs = parseRecord(r);
+  $('#recNote').innerHTML = `<div class="note-meta">📋 ${esc(r.meta)}</div><div class="note-paper">${segs.map(s => {
+    if (s.t !== undefined) return esc(s.t);
+    const isItem = !!r.items[s.key];
+    const cls = isItem ? (st.items[s.key] && st.items[s.key].done ? 'done' : '') : (st.seenD[s.key] ? 'miss' : '');
+    return `<button type="button" class="phrase ${cls} ${REC.active===s.key?'active':''}" data-key="${s.key}" aria-label="표현 선택: ${esc(s.phrase)}">${esc(s.phrase)}</button>`;
+  }).join('')}</div>
+  <p class="small muted" style="margin-top:8px">핵심 개념 ${Object.keys(r.items).length}개 중 <b>${Object.values(st.items).filter(x=>x.done).length}</b>개 코딩 완료</p>`;
+}
+function optLabel(c){ return `<div><b>${esc(c.concept_ko)}</b> <span class="small muted">${esc(c.concept_en)}</span></div><div class="codes">KCD ${esc(c.kcd9.code||'—')} · SNOMED CT ${esc(c.snomed.id||'—')}</div>`; }
+function renderRecWork(msg){
+  const r = RECORDS.find(x => x.id === REC.cur); const st = recState(r.id);
+  const k = REC.active;
+  if (!k){ $('#recWork').innerHTML = `<h3>코딩 작업대</h3><p class="muted">왼쪽 기록에서 점선 표현을 눌러 개념을 추출하세요.</p>${msg||''}`; return; }
+  if (r.distractors[k]){
+    $('#recWork').innerHTML = `<h3>코딩 작업대</h3><div class="feedback info">ℹ️ <b>핵심 코딩 대상이 아닙니다.</b><br>${esc(r.distractors[k])}</div>`; return;
+  }
+  const it = r.items[k]; const s = st.items[k] ||= { done:false, first:null, tried:[] };
+  const phrase = parseRecord(r).find(x => x.key === k).phrase;
+  const order = st.order[k] ||= shuffle(it.opts);
+  const correct = getConcept(it.c);
+  $('#recWork').innerHTML = `<h3>코딩 작업대</h3><p>추출한 표현: <b>“${esc(phrase)}”</b><br><span class="small muted">알맞은 표준 개념·코드를 고르세요.</span></p>
+    <div role="group" aria-label="코드 선택지">${order.map(id => { const c = getConcept(id); if (!c) return '';
+      let cls = ''; if (s.done && id === it.c) cls = 'correct'; else if (s.tried.includes(id)) cls = 'incorrect';
+      return `<button type="button" class="opt ${cls}" data-opt="${id}" ${s.done?'disabled':''}>${optLabel(c)}</button>`; }).join('')}</div>
+    ${s.done ? `<div class="feedback ok">✅ <b>정답</b>${s.first ? ' (첫 시도)' : ''} — ${esc(correct.concept_ko)}<br>${esc(it.why)}</div>` :
+      (s.tried.length ? `<div class="feedback no">❌ 오답입니다. ${esc(getConcept(s.tried[s.tried.length-1]).concept_ko)}은(는) 이 표현의 의미와 다릅니다. 다시 선택하세요.</div>` : '')}`;
+}
+function renderRecExtracted(){
+  const r = RECORDS.find(x => x.id === REC.cur); const st = recState(r.id);
+  const rows = Object.keys(r.items).filter(k => st.items[k] && st.items[k].done);
+  const segs = parseRecord(r);
+  $('#recExtracted').innerHTML = rows.length ? `<div class="table-scroll"><table class="data"><thead><tr><th>원문 표현</th><th>표준 개념</th><th>유형</th><th>KCD-9</th><th>SNOMED CT</th><th>검증</th></tr></thead><tbody>
+    ${rows.map(k => { const c = getConcept(r.items[k].c); const ph = segs.find(x=>x.key===k).phrase;
+      return `<tr><td>${esc(ph)}</td><td>${esc(c.concept_ko)}</td><td class="mono small">${esc(c.concept_type)}</td><td class="mono">${esc(c.kcd9.code||'—')}</td><td class="mono">${esc(c.snomed.id)}</td><td>${verifiedBadge(c.kcd9.verified && c.snomed.verified)}</td></tr>`; }).join('')}
+    </tbody></table></div>` : '<p class="muted small">아직 추출된 개념이 없습니다.</p>';
+}
+function renderRecords(){ renderRecTabs(); renderRecNote(); renderRecWork(); renderRecExtracted(); }
+renderers.records = renderRecords;
+$('#recTabs').addEventListener('click', e => { const b = e.target.closest('[data-rec]'); if (!b) return; REC.cur = b.dataset.rec; REC.active = null; renderRecords(); });
+$('#recNote').addEventListener('click', e => {
+  const b = e.target.closest('.phrase'); if (!b) return;
+  const r = RECORDS.find(x => x.id === REC.cur); const st = recState(r.id);
+  REC.active = b.dataset.key;
+  if (r.distractors[REC.active]) st.seenD[REC.active] = true;
+  renderRecNote(); renderRecWork();
+  if (window.innerWidth < 900) $('#recWork').scrollIntoView({ behavior:'smooth', block:'nearest' });
+});
+$('#recWork').addEventListener('click', e => {
+  const b = e.target.closest('[data-opt]'); if (!b || b.disabled) return;
+  const r = RECORDS.find(x => x.id === REC.cur); const st = recState(r.id); const k = REC.active; const it = r.items[k];
+  const s = st.items[k] ||= { done:false, first:null, tried:[] };
+  const id = b.dataset.opt;
+  if (id === it.c){ s.done = true; if (s.first === null) s.first = true; }
+  else { if (s.first === null) s.first = false; if (!s.tried.includes(id)) s.tried.push(id); }
+  if (Object.keys(r.items).every(x => st.items[x] && st.items[x].done) && !progress.records[r.id]){
+    progress.records[r.id] = true; saveProgress();
+    const firstOk = Object.keys(r.items).filter(x => st.items[x].first).length;
+    toast(`🎉 ${r.id} 완료! 첫 시도 정답 ${firstOk}/${Object.keys(r.items).length}`);
+    renderRecTabs();
+  }
+  renderRecNote(); renderRecWork(); renderRecExtracted();
+  const fb = $('#recWork .feedback'); if (fb) fb.setAttribute('tabindex','-1');
+});
+$('#recReset').addEventListener('click', () => { delete REC.state[REC.cur]; REC.active = null; renderRecords(); });
+
+/* =========================================================
+   5. Quiz
+   ========================================================= */
+const QUIZ_POOL = [
+  { id:'q1', type:'ox', q:'KCD(한국표준질병·사인분류)는 임상용어체계(terminology)가 아니라 분류체계(classification)이다.', a:'O', exp:'KCD는 ICD-10을 기반으로 한 통계·청구용 분류체계입니다. 임상 표현의 세밀함보다 상호배타적 범주화가 목적입니다.' },
+  { id:'q2', type:'mc', q:'SNOMED CT에 대한 설명으로 옳은 것은?', opts:['한 개념이 여러 부모(is-a)를 가질 수 있다','사망원인 통계 작성을 주목적으로 한다','세계보건기구(WHO)가 관리한다','질병만 표현하며 시술·소견은 표현하지 않는다'], a:0, exp:'SNOMED CT는 SNOMED International이 관리하는 임상용어체계로, 다중 부모(polyhierarchy)를 허용하고 질환·소견·절차·사건 등 임상 표현 전반을 다룹니다.' },
+  { id:'q3', type:'mc', q:'KCD 제9차 개정판(KCD-9)의 국내 시행 시기는?', opts:['2026년','2021년','2022년','2031년'], a:0, exp:'KCD-9은 2026년부터 시행되었습니다(KCD-8은 2021년). KCD는 대략 5년 주기로 개정됩니다.' },
+  { id:'q4', type:'ox', q:'ICD-11은 2022년 1월 1일 WHO에서 공식 발효되었다.', a:'O', exp:'ICD-11은 2019년 세계보건총회에서 채택되어 2022년 1월 1일 발효되었습니다.' },
+  { id:'q5', type:'mc', q:'국내 ICD-11 이행에 대한 설명으로 가장 적절한 것은?', opts:['2031년경 이행을 목표로 하며 계획은 변경될 수 있다','2022년부터 모든 의료기관이 ICD-11로 청구한다','국내는 ICD-11을 도입하지 않기로 결정했다','KCD-9이 곧 ICD-11이다'], a:0, exp:'국내는 2031년경 ICD-11 이행을 예정하고 있으나 계획은 변경될 수 있습니다. KCD-9은 여전히 ICD-10 기반입니다.' },
+  { id:'q6', type:'mc', q:'KCD/ICD-10 코드 “I10”에 해당하는 개념은?', opts:['본태성 고혈압','급성 심근경색','심부전','뇌경색'], a:0, exp:'I10은 본태성(원발성) 고혈압입니다. 급성 심근경색 I21, 심부전 I50, 뇌경색 I63.' },
+  { id:'q7', type:'mc', q:'다음 중 ICD-10(WHO)에는 대응 범주가 없지만 SNOMED CT로는 표현할 수 있는 간호 개념은?', opts:['유치도뇨관 삽입','폐렴','본태성 고혈압','천식'], a:0, exp:'유치도뇨관 삽입은 procedure입니다. 질병 분류인 ICD에는 자리가 없고 SNOMED CT 446583004로 표현합니다.' },
+  { id:'q8', type:'ox', q:'ICNP는 세계보건기구(WHO)가 개발·관리하는 간호용어체계이다.', a:'X', exp:'ICNP는 국제간호협의회(ICN)가 개발·관리합니다.' },
+  { id:'q9', type:'mc', q:'한국이 SNOMED International 회원국으로 가입한 연도는?', opts:['2020년','2010년','2016년','2024년'], a:0, exp:'한국은 2020년 SNOMED International 회원국으로 가입했습니다.' },
+  { id:'q10', type:'mc', q:'병원 A는 “DM”, 병원 B는 “당뇨병(2형)”으로 기록했다. 표준코드 매핑 없이 데이터를 합칠 때 생기는 문제로 가장 적절한 것은?', opts:['같은 질환이 서로 다른 항목으로 집계되어 통계와 의사결정지원이 왜곡된다','자동으로 같은 질환으로 인식되므로 문제없다','환자 개인정보가 자동으로 익명화된다','보험청구 금액이 자동으로 증가한다'], a:0, exp:'표준코드가 없으면 시스템은 문자열이 다른 두 항목을 다른 개념으로 처리합니다. 이것이 상호운용성 문제의 핵심입니다.' },
+  { id:'q11', type:'ox', q:'분류체계에서는 상호배타성 원칙에 따라 하나의 질병이 원칙적으로 한 범주에만 분류된다.', a:'O', exp:'분류체계는 통계 집계를 위해 중복 없이 한 범주에 배정합니다. 반면 SNOMED CT는 다중 부모를 허용합니다.' },
+  { id:'q12', type:'mc', q:'SNOMED CT 개념의 FSN “Diabetes mellitus type 2 (disorder)”에서 괄호 안 “disorder”의 의미는?', opts:['개념이 속한 계층을 나타내는 의미 태그(semantic tag)','ICD-10 장 번호','코드 검증 여부','한국어 번역 여부'], a:0, exp:'FSN 끝의 괄호는 의미 태그로, disorder·finding·procedure·event 등 개념의 계층을 나타냅니다.' },
+  { id:'q13', type:'ox', q:'ICD-10 범주 “R11”은 오심과 구토를 하나의 범주로 묶어 분류한다.', a:'O', exp:'ICD-10 R11은 “Nausea and vomiting(구역 및 구토)”입니다. SNOMED CT는 오심(422587007)을 독립 개념으로 표현합니다.' }
+];
+const QZ_DEFAULT = { history:[], wrong:[], best:null };
+let quizStore = Object.assign(clone(QZ_DEFAULT), Store.get(KEYS.quiz, {}) || {});
+if (!Array.isArray(quizStore.history)) quizStore.history = [];
+if (!Array.isArray(quizStore.wrong)) quizStore.wrong = [];
+const QZ = { mode:'idle', list:[], i:0, score:0, answered:false, wrongNow:[], retry:false };
+function saveQuiz(){ Store.set(KEYS.quiz, quizStore); }
+function startQuiz(retry){
+  const pool = retry ? QUIZ_POOL.filter(q => quizStore.wrong.includes(q.id)) : QUIZ_POOL;
+  if (!pool.length){ toast('재풀이할 오답이 없습니다'); return; }
+  QZ.list = shuffle(pool).slice(0, retry ? pool.length : 10).map(q => q.type === 'mc'
+    ? Object.assign({}, q, { order: shuffle(q.opts.map((_,i)=>i)) }) : q);
+  Object.assign(QZ, { mode:'run', i:0, score:0, answered:false, wrongNow:[], retry:!!retry });
+  renderQuiz();
+}
+function renderQuizHome(){
+  const h = quizStore.history.slice(-10);
+  $('#quizBox').innerHTML = `<div class="row" style="align-items:flex-start;gap:18px">
+    <div style="flex:1;min-width:220px"><h3>준비되셨나요?</h3><p class="muted small">문항 풀 ${QUIZ_POOL.length}개 중 10문항을 무작위로 출제합니다. 분류/용어 구분, KCD-9 시행 연도, ICD-11 이행 계획, 코드 매칭 등을 다룹니다.</p>
+      <div class="row" style="margin-top:10px"><button type="button" class="btn primary" id="qzStart">퀴즈 시작</button>
+      <button type="button" class="btn" id="qzRetry" ${quizStore.wrong.length?'':'disabled'}>오답 재풀이 (${quizStore.wrong.length})</button>
+      <button type="button" class="btn sm" id="qzClear" ${quizStore.history.length||quizStore.wrong.length?'':'disabled'}>기록 초기화</button></div></div>
+    <div style="min-width:200px"><div class="small muted">최고 점수</div><div class="score-big">${quizStore.best ?? '—'}<span class="small muted">${quizStore.best!=null?' / 10':''}</span></div>
+      ${h.length ? `<div class="small muted" style="margin-top:10px">최근 ${h.length}회 기록</div><div class="hist" aria-label="최근 점수 기록">${h.map(x => `<span style="height:${Math.max(6,(x.score/x.total)*100)}%" title="${esc(x.date)} — ${x.score}/${x.total}${x.retry?' (오답 재풀이)':''}"></span>`).join('')}</div>` : ''}</div></div>`;
+}
+function renderQuiz(){
+  if (QZ.mode === 'idle') return renderQuizHome();
+  if (QZ.mode === 'done'){
+    const total = QZ.list.length;
+    $('#quizBox').innerHTML = `<h3>${QZ.retry ? '오답 재풀이 결과' : '퀴즈 결과'}</h3><div class="score-big" style="margin:8px 0">${QZ.score}<span class="small muted"> / ${total}</span></div>
+      ${QZ.wrongNow.length ? `<p>틀린 문항 ${QZ.wrongNow.length}개는 “오답 재풀이”에 저장되었습니다.</p><ul class="small">${QZ.wrongNow.map(id => `<li>${esc(QUIZ_POOL.find(q=>q.id===id).q)}</li>`).join('')}</ul>` : '<p>🎉 모두 맞혔습니다!</p>'}
+      <div class="row" style="margin-top:10px"><button type="button" class="btn primary" id="qzStart">새 퀴즈</button><button type="button" class="btn" id="qzRetry" ${quizStore.wrong.length?'':'disabled'}>오답 재풀이 (${quizStore.wrong.length})</button><button type="button" class="btn" id="qzHome">처음으로</button></div>`;
+    return;
+  }
+  const q = QZ.list[QZ.i];
+  const n = QZ.list.length;
+  let opts;
+  if (q.type === 'ox') opts = `<div class="ox" role="group" aria-label="O 또는 X 선택">${['O','X'].map(v => `<button type="button" class="opt ${QZ.answered ? (v===q.a?'correct':(QZ.pick===v?'incorrect':'')) : ''}" data-ans="${v}" ${QZ.answered?'disabled':''} aria-label="${v==='O'?'O 맞다':'X 틀리다'}">${v}</button>`).join('')}</div>`;
+  else opts = `<div role="group" aria-label="보기">${q.order.map((oi,idx) => `<button type="button" class="opt ${QZ.answered ? (oi===q.a?'correct':(QZ.pick===oi?'incorrect':'')) : ''}" data-ans="${oi}" ${QZ.answered?'disabled':''}>${idx+1}. ${esc(q.opts[oi])}</button>`).join('')}</div>`;
+  const ok = QZ.answered && QZ.lastOk;
+  $('#quizBox').innerHTML = `<div class="row small muted"><span>${QZ.retry?'오답 재풀이 · ':''}문항 ${QZ.i+1} / ${n}</span><span class="spacer"></span><span>점수 ${QZ.score}</span></div>
+    <div class="quiz-progress" aria-hidden="true"><i style="width:${(QZ.i/n)*100}%"></i></div>
+    <span class="type-badge">${q.type==='ox'?'O/X':'객관식'}</span><p class="q-text">${esc(q.q)}</p>${opts}
+    ${QZ.answered ? `<div class="feedback ${ok?'ok':'no'}" tabindex="-1" id="qzFb">${ok?'✅ 정답입니다.':'❌ 오답입니다.'} ${esc(q.exp)}</div>
+      <div class="row" style="margin-top:10px"><button type="button" class="btn primary" id="qzNext">${QZ.i+1<n?'다음 문항 →':'결과 보기'}</button></div>` : ''}`;
+  if (QZ.answered) { const nx = $('#qzNext'); if (nx) nx.focus(); }
+}
+$('#quizBox').addEventListener('click', e => {
+  const t = e.target.closest('button'); if (!t) return;
+  if (t.id === 'qzStart') return startQuiz(false);
+  if (t.id === 'qzRetry') return startQuiz(true);
+  if (t.id === 'qzHome'){ QZ.mode = 'idle'; return renderQuiz(); }
+  if (t.id === 'qzClear'){ if (window.confirm('퀴즈 점수와 오답 기록을 모두 지울까요?')){ quizStore = clone(QZ_DEFAULT); saveQuiz(); renderQuiz(); } return; }
+  if (t.id === 'qzNext'){
+    QZ.i++; QZ.answered = false; QZ.pick = null;
+    if (QZ.i >= QZ.list.length){
+      QZ.mode = 'done';
+      const date = new Date().toISOString().slice(0,16).replace('T',' ');
+      quizStore.history.push({ date, score:QZ.score, total:QZ.list.length, retry:QZ.retry });
+      if (quizStore.history.length > 30) quizStore.history = quizStore.history.slice(-30);
+      if (!QZ.retry && QZ.list.length === 10) quizStore.best = Math.max(quizStore.best ?? 0, QZ.score);
+      saveQuiz(); progress.quiz = true; saveProgress();
+    }
+    return renderQuiz();
+  }
+  if (t.dataset.ans !== undefined && !QZ.answered){
+    const q = QZ.list[QZ.i];
+    const pick = q.type === 'ox' ? t.dataset.ans : Number(t.dataset.ans);
+    QZ.pick = pick; QZ.answered = true; QZ.lastOk = pick === q.a;
+    if (QZ.lastOk){ QZ.score++; quizStore.wrong = quizStore.wrong.filter(id => id !== q.id); }
+    else { QZ.wrongNow.push(q.id); if (!quizStore.wrong.includes(q.id)) quizStore.wrong.push(q.id); }
+    saveQuiz(); renderQuiz();
+  }
+});
+renderers.quiz = () => { if (QZ.mode === 'idle') renderQuiz(); };
+
+/* =========================================================
+   6. Overview
+   ========================================================= */
+function renderOverview(){
+  const rows = [
+    ['KCD-9','kcd9','분류체계','국가데이터처 (구 통계청, 2025.10.1. 승격)','질병·사인 통계, 진료기록 진단 코딩, 건강보험 청구','ICD-10 기반에 국내 실정을 반영해 세분화. 약 5년 주기 개정','2026년부터 제9차 시행. 의료기관 의무기록·청구·사망원인통계의 법정 표준'],
+    ['ICD-10','icd10','분류체계','세계보건기구(WHO)','국제 질병·사망 통계 비교','22개 장, 영문자+숫자 3~4자리 상호배타적 범주','KCD의 모체(국내는 KCD를 통해 사용)'],
+    ['ICD-11','icd11','분류체계 (디지털 기반)','세계보건기구(WHO)','통계 + 임상 기록 지원 강화','파운데이션 구조, 스템코드 + 확장코드 조합(후조합)','2022.1.1 WHO 발효. 국내는 2031년경 이행 예정(계획 변경 가능)'],
+    ['SNOMED CT','snomed','임상용어체계','SNOMED International','EHR 임상 표현, 상호운용성, 임상의사결정지원','개념–설명–관계 모델, is-a 다중 부모, 질환·소견·절차·사건 등 19개 최상위 계층','2020년 회원국 가입. 국가 배포 및 한국어 확장(Korean Extension) 구축'],
+    ['ICNP','icnp','간호용어체계','국제간호협의회(ICN)','간호진단·결과·중재의 표준 표현, 간호 기여 가시화','7축 모형(초점·판단·수단·행위·시간·위치·대상자) 기반 사전조합 개념','간호기록 표준화 연구·교육에 활용']
+  ];
+  $('#overviewBox').innerHTML = `
+  <div class="card"><h3>분류체계 vs 임상용어체계</h3>
+    <div class="vs" style="margin-top:10px">
+      <div><b>📦 분류체계 (Classification)</b> — KCD, ICD<ul><li>목적: <b>집계·통계·청구</b></li><li>상호배타적·망라적 범주: 한 개념은 <b>한 곳</b>에만</li><li>“기타”, “상세불명” 범주 존재</li><li>세부 임상 정보는 묶여서 손실될 수 있음</li></ul></div>
+      <div><b>🧬 임상용어체계 (Terminology)</b> — SNOMED CT, ICNP<ul><li>목적: <b>임상 기록·표현·상호운용성</b></li><li>개념 간 관계(is-a, 속성)로 의미 표현, <b>다중 부모</b> 허용</li><li>질환뿐 아니라 소견·절차·사건까지 표현</li><li>분류로 매핑(map)해 통계에 재사용 가능</li></ul></div>
+    </div></div>
+  <div class="card"><h3>표준별 비교표</h3>
+    <div class="table-scroll" style="margin-top:10px"><table class="data"><thead><tr><th>표준</th><th>성격</th><th>관리기관</th><th>목적</th><th>구조 특징</th><th>국내 활용</th></tr></thead><tbody>
+      ${rows.map(r => `<tr><td><span class="std ${r[1]}">${r[0]}</span></td><td>${r[2]}</td><td>${r[3]}</td><td>${r[4]}</td><td>${r[5]}</td><td>${r[6]}</td></tr>`).join('')}
+    </tbody></table></div>
+    <p class="insight small">📌 <b>국내 ICD-11 이행</b>: 2031년경 이행 예정입니다. 다만 일정·방식은 정부 계획에 따라 <b>변경될 수 있으므로</b> 최신 공지를 확인하십시오.</p></div>
+  <div class="card"><h3>연표</h3><ul class="timeline" style="margin-top:10px">
+    <li><span class="y">1990</span><span>세계보건총회, ICD-10 승인 (회원국 사용은 1990년대 중반부터)</span></li>
+    <li><span class="y">2019</span><span>세계보건총회, ICD-11 채택</span></li>
+    <li><span class="y">2020</span><span>한국, SNOMED International 회원국 가입</span></li>
+    <li><span class="y">2021</span><span>KCD-8 시행</span></li>
+    <li><span class="y">2022</span><span>ICD-11 WHO 공식 발효 (1월 1일)</span></li>
+    <li><span class="y">2025</span><span>통계청 → <b>국가데이터처</b> 승격·출범 (10월 1일, 국무총리 소속)</span></li>
+    <li><span class="y">2026</span><span>KCD-9 시행</span></li>
+    <li class="plan"><span class="y">~2031</span><span>국내 ICD-11 이행 예정 <span class="muted small">(계획 변경 가능)</span></span></li>
+  </ul></div>
+  <div class="card"><h3>공식 원본·참고 자료</h3><ul class="small">
+    <li>국가데이터처 (구 통계청): <a href="https://www.mods.go.kr" target="_blank" rel="noopener">mods.go.kr</a> · 통계분류포털 (KCD): <a href="https://kssc.kostat.go.kr" target="_blank" rel="noopener">kssc.kostat.go.kr</a></li>
+    <li>WHO ICD-11 Browser: <a href="https://icd.who.int" target="_blank" rel="noopener">icd.who.int</a></li>
+    <li>SNOMED International: <a href="https://www.snomed.org" target="_blank" rel="noopener">snomed.org</a> · SNOMED CT Browser: <a href="https://browser.ihtsdotools.org" target="_blank" rel="noopener">browser.ihtsdotools.org</a></li>
+    <li>한국보건의료정보원 (국내 SNOMED CT 관련 업무): <a href="https://www.k-his.or.kr" target="_blank" rel="noopener">k-his.or.kr</a></li>
+    <li>국제간호협의회 ICN (ICNP): <a href="https://www.icn.ch" target="_blank" rel="noopener">icn.ch</a></li>
+  </ul><p class="small muted">이 앱의 코드는 학습용 선별 자료이며 모든 항목은 기본적으로 “⚠ 검증 필요” 상태입니다.</p></div>`;
+}
+renderers.overview = renderOverview;
+
+/* =========================================================
+   6-2. Verification mission (학생 직접 검증)
+   ========================================================= */
+const V_TYPES = {
+  kcd_name:   { label:'KCD-9 한글 명칭', std:'kcd9', field:'kcd9.name',
+                how:'통계분류포털에서 KCD-9을 선택하고 코드(예: E11)로 검색해, 공식 한글 명칭을 띄어쓰기까지 그대로 옮겨 적으세요.' },
+  kcd_chapter:{ label:'KCD-9 장(章)', std:'kcd9', field:'kcd9.chapter',
+                how:'해당 코드가 속한 장의 로마숫자 번호와 장 제목을 확인하세요(예: IV 내분비, 영양 및 대사 질환).' },
+  kcd_block:  { label:'KCD-9 블록', std:'kcd9', field:'kcd9.block',
+                how:'해당 코드가 속한 블록의 코드 범위와 제목을 확인하세요(예: E10–E14 당뇨병).' },
+  icnp_name:  { label:'ICNP 공식 용어', std:'icnp', field:'icnp.name',
+                how:'ICN의 ICNP 브라우저에서 제안 개념명에 해당하는 용어가 있는지 찾고, 공식 용어(영문)와 진단/결과·중재 구분을 기록하세요. 코드를 찾았다면 메모에 적으세요.' }
+};
+const V_SOURCES = {
+  kcd9:[ { name:'국가데이터처 통계분류포털 (KCD)', url:'https://kssc.kostat.go.kr' }, { name:'국가데이터처', url:'https://www.mods.go.kr' } ],
+  icnp:[ { name:'국제간호협의회(ICN) — ICNP', url:'https://www.icn.ch' } ]
+};
+const V_STATUS = { match:'✓ 일치', mismatch:'✗ 불일치', notfound:'? 찾지 못함' };
+function getPath(o, path){ return path.split('.').reduce((a,k)=>a==null?a:a[k], o); }
+function setPath(o, path, v){ const ks = path.split('.'); const last = ks.pop(); ks.reduce((a,k)=>a[k], o)[last] = v; }
+function buildVTasks(){
+  const out = [];
+  DATA.forEach(c => {
+    if (c.kcd9.code) ['kcd_name','kcd_chapter','kcd_block'].forEach(t => out.push({ id:`${c.id}.${t}`, cid:c.id, type:t }));
+    out.push({ id:`${c.id}.icnp_name`, cid:c.id, type:'icnp_name' });
+  });
+  return out;
+}
+function vAppValue(c, type){
+  if (type === 'icnp_name') return c.icnp.name || c.icnp.suggested_name || '';
+  return getPath(c, V_TYPES[type].field) || '';
+}
+let vState = Object.assign({ student:'', results:{}, assigned:null }, Store.get(KEYS.verify, {}) || {});
+if (!vState.results || typeof vState.results !== 'object') vState.results = {};
+if (vState.assigned && !Array.isArray(vState.assigned)) vState.assigned = null;
+const VF = { type:'all', status:'all' };
+function saveV(){ Store.set(KEYS.verify, vState); }
+function vDoneCount(){ return Object.values(vState.results).filter(r => r && r.status).length; }
+function vTaskCard(t){
+  const c = getConcept(t.cid); if (!c) return '';
+  const m = V_TYPES[t.type]; const r = vState.results[t.id] || {};
+  const app = vAppValue(c, t.type);
+  const ctx = m.std === 'kcd9' ? `KCD 코드 <code>${esc(c.kcd9.code)}</code>` : `ICNP 제안 개념명 (${esc(c.concept_ko)})`;
+  const needVal = r.status === 'mismatch' && !String(r.value||'').trim();
+  return `<article class="v-task ${r.status ? 'st-'+r.status : ''}" data-task="${esc(t.id)}" aria-label="${esc(c.concept_ko)} ${esc(m.label)} 검증 과제">
+    <div class="row"><b>${esc(c.concept_ko)}</b><span class="std ${m.std}">${esc(m.label)}</span><span class="spacer"></span>${r.status ? `<span class="v-done">${V_STATUS[r.status]}</span>` : '<span class="v-done muted">미완료</span>'}</div>
+    <div class="small muted">${ctx}</div>
+    <div class="app-val"><span class="small muted">앱 제안값(검증 전):</span><br>${app ? esc(app) : '<i class="muted">값 없음</i>'}</div>
+    <details class="small"><summary>확인 방법 · 공식 원본</summary><p>${esc(m.how)}</p><p>${V_SOURCES[m.std].map(s => `<a href="${s.url}" target="_blank" rel="noopener">${esc(s.name)}</a>`).join(' · ')}</p></details>
+    <div class="st-row" role="group" aria-label="판정">${Object.keys(V_STATUS).map(s => `<button type="button" class="chip" data-vst="${s}" aria-pressed="${r.status===s}">${V_STATUS[s]}</button>`).join('')}</div>
+    ${r.status === 'mismatch' || r.status === 'match' && t.type === 'icnp_name' ? `<label class="sr-only" for="vv-${esc(t.id)}">공식 원본의 올바른 값</label><input type="text" id="vv-${esc(t.id)}" data-vf="value" value="${esc(r.value||'')}" placeholder="${r.status==='mismatch' ? '공식 원본의 올바른 값 (필수)' : 'ICNP 공식 용어(영문)'}">` : ''}
+    ${r.status === 'mismatch' ? `<p class="small v-warn" style="color:var(--danger);margin:4px 0 0" ${needVal?'':'hidden'}>불일치라면 올바른 값을 적어 주세요.</p>` : ''}
+    ${r.status ? `<label class="sr-only" for="vs-${esc(t.id)}">근거</label><input type="text" id="vs-${esc(t.id)}" data-vf="source" value="${esc(r.source||'')}" placeholder="근거: 출처·화면·버전 (예: 통계분류포털 KCD-9 E11)">
+      <label class="sr-only" for="vn-${esc(t.id)}">메모</label><input type="text" id="vn-${esc(t.id)}" data-vf="note" value="${esc(r.note||'')}" placeholder="메모 (선택)">` : ''}
+  </article>`;
+}
+function vVisibleTasks(){
+  let tasks = buildVTasks();
+  if (vState.assigned) { const set = new Set(vState.assigned); tasks = tasks.filter(t => set.has(t.id)); }
+  if (VF.type !== 'all') tasks = tasks.filter(t => t.type === VF.type);
+  if (VF.status === 'todo') tasks = tasks.filter(t => !(vState.results[t.id] && vState.results[t.id].status));
+  if (VF.status === 'done') tasks = tasks.filter(t => vState.results[t.id] && vState.results[t.id].status);
+  return tasks;
+}
+function vSummaryHTML(){
+  const all = buildVTasks();
+  const scope = vState.assigned ? all.filter(t => vState.assigned.includes(t.id)) : all;
+  const cnt = s => scope.filter(t => vState.results[t.id] && vState.results[t.id].status === s).length;
+  const done = scope.filter(t => vState.results[t.id] && vState.results[t.id].status).length;
+  return `<span class="chip">${vState.assigned ? '배정 과제' : '전체 과제'} ${done}/${scope.length} 완료</span>
+    <span class="chip">✓ 일치 ${cnt('match')}</span><span class="chip">✗ 불일치 ${cnt('mismatch')}</span><span class="chip">? 찾지 못함 ${cnt('notfound')}</span>`;
+}
+function renderVerify(){
+  const tasks = vVisibleTasks();
+  $('#verifyBox').innerHTML = `
+  <div class="card"><h3>진행 방법</h3>
+    <div class="v-guide">
+      <div><b>① 과제 고르기</b><ol><li>“무작위 5개 배정”으로 과제를 받거나 전체 목록에서 고릅니다.</li><li>앱 제안값을 먼저 읽습니다.</li></ol></div>
+      <div><b>② 공식 원본과 대조</b><ol><li>각 카드의 “확인 방법 · 공식 원본”을 펼쳐 원본을 엽니다.</li><li>일치·불일치·찾지 못함 중 하나로 판정합니다.</li><li>불일치면 원본의 올바른 값을 그대로 적습니다.</li></ol></div>
+      <div><b>③ 근거 남기고 제출</b><ol><li>근거 칸에 출처·화면·버전을 적습니다.</li><li>JSON 또는 CSV로 내보내 교수자에게 제출합니다.</li></ol></div>
+    </div>
+    <p class="insight small">⚖️ <b>원칙</b>: 블로그·요약 자료·AI 답변이 아니라 <b>관리기관의 공식 원본</b>에서 확인합니다. 찾지 못했다면 추측하지 말고 “찾지 못함”으로 남기세요. 그것도 정직한 검증 결과입니다.</p>
+  </div>
+  <div class="card">
+    <div class="form-grid">
+      <div><label for="vStudent">제출자 (학번 또는 이름, 선택)</label><input id="vStudent" type="text" value="${esc(vState.student)}" autocomplete="off"></div>
+      <div><label for="vType">과제 유형</label><select id="vType"><option value="all">전체</option>${Object.keys(V_TYPES).map(k=>`<option value="${k}" ${VF.type===k?'selected':''}>${esc(V_TYPES[k].label)}</option>`).join('')}</select></div>
+      <div><label for="vStatus">진행 상태</label><select id="vStatus"><option value="all">전체</option><option value="todo" ${VF.status==='todo'?'selected':''}>미완료</option><option value="done" ${VF.status==='done'?'selected':''}>완료</option></select></div>
+    </div>
+    <div class="row" style="margin-top:10px">
+      <button type="button" class="btn primary" id="vAssign">🎲 무작위 5개 배정</button>
+      <button type="button" class="btn" id="vAll" ${vState.assigned?'':'disabled'}>전체 과제 보기</button>
+      <span class="spacer"></span>
+      <button type="button" class="btn" id="vExportJson">⬇ JSON 제출 파일</button>
+      <button type="button" class="btn" id="vExportCsv">⬇ CSV (엑셀)</button>
+      <button type="button" class="btn sm danger" id="vClear">기록 초기화</button>
+    </div>
+    <div class="v-summary" aria-live="polite">${vSummaryHTML()}</div>
+  </div>
+  <div class="v-list" id="vList">${tasks.map(vTaskCard).join('') || '<p class="muted">조건에 맞는 과제가 없습니다.</p>'}</div>`;
+}
+renderers.verify = renderVerify;
+function vRerenderCard(id){
+  const old = $(`#vList [data-task="${CSS.escape(id)}"]`); const t = buildVTasks().find(x => x.id === id);
+  if (old && t) old.outerHTML = vTaskCard(t);
+}
+function vRows(){
+  return buildVTasks().filter(t => vState.results[t.id] && vState.results[t.id].status).map(t => {
+    const c = getConcept(t.cid), r = vState.results[t.id];
+    return { task_id:t.id, concept_id:t.cid, concept_ko:c.concept_ko, item:V_TYPES[t.type].label, kcd_code:c.kcd9.code||'',
+      app_value:vAppValue(c,t.type), status:r.status, value:r.value||'', source:r.source||'', note:r.note||'', updated:r.ts||'' };
+  });
+}
+function downloadText(filename, text, mime){
+  try {
+    const blob = new Blob([text], { type:mime });
+    const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = filename;
+    document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 500);
+    return true;
+  } catch(err){ toast('파일 저장에 실패했습니다: ' + err.message); return false; }
+}
+function vFileBase(){ const who = (vState.student||'student').replace(/[^\w가-힣-]/g,'_').slice(0,30); return `verification_${who}_${new Date().toISOString().slice(0,10)}`; }
+$('#verifyBox').addEventListener('click', e => {
+  const b = e.target.closest('button'); if (!b) return;
+  if (b.dataset.vst){
+    const id = b.closest('[data-task]').dataset.task;
+    const r = vState.results[id] ||= {};
+    r.status = r.status === b.dataset.vst ? '' : b.dataset.vst; r.ts = new Date().toISOString();
+    if (!r.status) delete vState.results[id];
+    saveV(); vRerenderCard(id);
+    const card = $(`#vList [data-task="${CSS.escape(id)}"]`);
+    const focusEl = card && ($('input[data-vf="value"]', card) || $(`[data-vst="${b.dataset.vst}"]`, card)); if (focusEl) focusEl.focus();
+    if (vDoneCount() >= 5 && !progress.verify){ progress.verify = true; saveProgress(); toast('🎉 검증 미션 5건 달성!'); }
+    const sum = $('#verifyBox .v-summary'); if (sum) sum.innerHTML = vSummaryHTML();
+    return;
+  }
+  if (b.id === 'vAssign'){
+    const pool = buildVTasks();
+    const todo = pool.filter(t => !(vState.results[t.id] && vState.results[t.id].status));
+    vState.assigned = shuffle(todo.length >= 5 ? todo : pool).slice(0,5).map(t => t.id); saveV(); renderVerify(); toast('과제 5개를 배정했습니다'); return;
+  }
+  if (b.id === 'vAll'){ vState.assigned = null; saveV(); renderVerify(); return; }
+  if (b.id === 'vClear'){ if (!window.confirm('검증 미션 기록을 모두 지울까요?')) return; vState = { student:vState.student, results:{}, assigned:null }; saveV(); renderVerify(); return; }
+  if (b.id === 'vExportJson' || b.id === 'vExportCsv'){
+    const rows = vRows();
+    if (!rows.length){ toast('판정한 과제가 없습니다'); return; }
+    const miss = rows.filter(r => r.status === 'mismatch' && !r.value.trim()).length;
+    if (miss && !window.confirm(`불일치인데 올바른 값이 비어 있는 과제가 ${miss}개 있습니다. 그래도 내보낼까요?`)) return;
+    if (b.id === 'vExportJson'){
+      const payload = { type:'nte-verification', schema:1, app:'Nursing Terminology Explorer', student:vState.student, exported_at:new Date().toISOString(), results:rows };
+      if (downloadText(vFileBase()+'.json', JSON.stringify(payload, null, 2), 'application/json')) toast('제출용 JSON을 저장했습니다');
+    } else {
+      const head = ['task_id','concept_id','개념','항목','KCD코드','앱 제안값','판정','올바른 값','근거','메모','수정시각'];
+      const q = v => `"${String(v).replace(/"/g,'""')}"`;
+      const lines = [head.map(q).join(',')].concat(rows.map(r => [r.task_id,r.concept_id,r.concept_ko,r.item,r.kcd_code,r.app_value,V_STATUS[r.status],r.value,r.source,r.note,r.updated].map(q).join(',')));
+      if (downloadText(vFileBase()+'.csv', '﻿' + lines.join('\r\n'), 'text/csv;charset=utf-8')) toast('CSV를 저장했습니다');
+    }
+  }
+});
+$('#verifyBox').addEventListener('change', e => {
+  const el = e.target;
+  if (el.id === 'vStudent'){ vState.student = el.value.trim(); saveV(); return; }
+  if (el.id === 'vType'){ VF.type = el.value; renderVerify(); return; }
+  if (el.id === 'vStatus'){ VF.status = el.value; renderVerify(); return; }
+  if (el.dataset.vf){
+    const id = el.closest('[data-task]').dataset.task; const r = vState.results[id]; if (!r) return;
+    r[el.dataset.vf] = el.value.trim(); r.ts = new Date().toISOString(); saveV();
+    if (el.dataset.vf === 'value'){ const w = $('.v-warn', el.closest('[data-task]')); if (w) w.hidden = !!el.value.trim(); }
+  }
+});
+
+/* ---------- 교수자: 학생 검증 결과 집계 ---------- */
+let vSubs = Store.get(KEYS.vsubs, []); if (!Array.isArray(vSubs)) vSubs = [];
+function vAggregateHTML(){
+  if (!vSubs.length) return '<p class="small muted">아직 불러온 학생 제출 파일이 없습니다.</p>';
+  const agg = {};
+  vSubs.forEach(sub => (sub.results||[]).forEach(r => {
+    const a = agg[r.task_id] ||= { r, match:0, notfound:0, mismatch:{}, sources:[] };
+    if (r.status === 'match') a.match++;
+    else if (r.status === 'notfound') a.notfound++;
+    else if (r.status === 'mismatch' && r.value){ a.mismatch[r.value] = (a.mismatch[r.value]||0) + 1; }
+    if (r.source) a.sources.push(`${sub.student||'익명'}: ${r.source}`);
+  }));
+  const tids = Object.keys(agg).sort();
+  return `<p class="small muted">제출 ${vSubs.length}건 (${vSubs.map(s=>esc(s.student||'익명')).join(', ')}) · 과제 ${tids.length}개. <b>적용</b>은 해당 텍스트 필드만 바꾸며 verified 상태는 바꾸지 않습니다.</p>
+  <div class="table-scroll" style="margin-top:8px;max-height:460px"><table class="data"><thead><tr><th>과제</th><th>현재 앱 값</th><th>일치</th><th>불일치 제안값 (응답 수)</th><th>못 찾음</th><th>근거</th></tr></thead><tbody>
+  ${tids.map(id => { const a = agg[id]; const [cid, type] = id.split('.'); const c = getConcept(cid); const m = V_TYPES[type];
+    if (!c || !m) return '';
+    const cur = vAppValue(c, type);
+    return `<tr><td>${esc(c.concept_ko)}<div class="small muted">${esc(m.label)}${c.kcd9.code?' · '+esc(c.kcd9.code):''}</div></td><td class="small">${esc(cur)}</td><td>${a.match}</td>
+      <td>${Object.entries(a.mismatch).sort((x,y)=>y[1]-x[1]).map(([v,n]) => `<div style="margin-bottom:4px">${esc(v)} <b>(${n})</b> <button type="button" class="btn sm" data-vapply="${esc(id)}" data-val="${esc(v)}">적용</button></div>`).join('') || '—'}</td>
+      <td>${a.notfound}</td><td class="small">${a.sources.slice(0,4).map(esc).join('<br>')}${a.sources.length>4?'<br>…':''}</td></tr>`; }).join('')}
+  </tbody></table></div>`;
+}
+function vApply(id, val){
+  const [cid, type] = id.split('.'); const c = DATA.find(x => x.id === cid); const m = V_TYPES[type];
+  if (!c || !m) { toast('대상 개념을 찾을 수 없습니다'); return; }
+  if (!window.confirm(`${c.concept_ko} · ${m.label}\n“${vAppValue(c,type)}” → “${val}”\n공식 원본을 직접 확인하셨나요? 적용할까요?`)) return;
+  setPath(c, m.field, val); saveData(); renderAdmin(); toast('적용했습니다 (verified 상태는 변경되지 않음)');
+}
+
+/* =========================================================
+   7. Instructor mode
+   ========================================================= */
+const getPin = () => { const p = Store.get(KEYS.pin, '0000'); return (typeof p === 'string' && /^\d{4,8}$/.test(p)) ? p : '0000'; };
+function setInstructor(on){
+  instructor = on;
+  document.body.classList.toggle('instructor', on);
+  $('#tab-admin').hidden = !on;
+  const lb = $('#lockBtn');
+  lb.textContent = on ? '🔓' : '🔒';
+  lb.classList.toggle('active', on);
+  lb.setAttribute('aria-label', on ? '교수자 모드 종료' : '교수자 모드 진입 (PIN 필요)');
+  if (on) activateTab('admin'); else if ($('#tab-admin').getAttribute('aria-selected') === 'true') activateTab('rosetta');
+  else { const cur = $('.tab[aria-selected="true"]'); if (cur) activateTab(cur.id.replace('tab-','')); }
+}
+$('#lockBtn').addEventListener('click', () => {
+  if (instructor){ setInstructor(false); toast('교수자 모드를 종료했습니다'); return; }
+  openModal({ title:'교수자 모드', narrow:true, html:`<form id="pinForm"><label for="pinInput">PIN 입력 (기본 0000)</label>
+      <input id="pinInput" type="password" inputmode="numeric" autocomplete="off" maxlength="8" aria-describedby="pinHelp">
+      <p class="small muted" id="pinHelp">간이 잠금입니다(브라우저 저장 PIN, 보안 기능 아님).</p>
+      <p class="small" id="pinErr" role="alert" style="color:var(--danger)"></p>
+      <div class="row"><span class="spacer"></span><button class="btn primary" type="submit">진입</button></div></form>`,
+    onMount(back, close){
+      $('#pinForm', back).addEventListener('submit', e => {
+        e.preventDefault();
+        if ($('#pinInput', back).value === getPin()){ close(); setInstructor(true); toast('교수자 모드 진입'); }
+        else { $('#pinErr', back).textContent = 'PIN이 올바르지 않습니다.'; $('#pinInput', back).select(); }
+      });
+    } });
+});
+function verifyCount(c){ return STD_KEYS.filter(k => c[k].verified).length; }
+function renderAdmin(){
+  if (!instructor) return;
+  const unv = [];
+  DATA.forEach(c => STD_KEYS.forEach(k => { const code = codeOf(c,k); if (code && !c[k].verified) unv.push({ c, k, code }); }));
+  const empty = [];
+  DATA.forEach(c => ['icd11','icnp'].forEach(k => { if (!codeOf(c,k)) empty.push({ c, k }); }));
+  $('#adminBox').innerHTML = `
+  <div class="card"><h3>데이터 관리</h3>
+    <div class="row" style="margin-top:8px">
+      <button type="button" class="btn primary" id="adAdd">＋ 개념 추가</button>
+      <button type="button" class="btn" id="adExport">⬇ JSON 내보내기</button>
+      <label class="btn" for="adImport" style="margin:0;color:inherit;font-size:.9rem">⬆ JSON 불러오기</label><input type="file" id="adImport" accept=".json,application/json" class="sr-only">
+      <button type="button" class="btn" id="adPin">PIN 변경</button>
+      <button type="button" class="btn danger" id="adReset">내장 기본 데이터로 초기화</button>
+    </div>
+    <p class="small muted" style="margin-top:8px">현재 개념 ${DATA.length}개 · 편집 내용은 이 브라우저에만 저장됩니다. 다음 학기 재사용·동료 공유는 <b>JSON 내보내기</b>를 사용하세요.${Store.available() ? '' : ' <b style="color:var(--warn)">(저장소 차단 상태 — 새로고침 시 사라짐)</b>'}</p></div>
+  <div class="card"><h3>개념 목록</h3><div class="table-scroll" style="margin-top:8px;max-height:460px"><table class="data"><thead><tr><th>ID</th><th>개념</th><th>KCD</th><th>ICD-11</th><th>SNOMED</th><th>ICNP</th><th>검증</th><th>편집</th></tr></thead><tbody>
+    ${DATA.map(c => `<tr><td class="mono">${esc(c.id)}</td><td>${esc(c.concept_ko)}<div class="small muted">${esc(c.category)} · ${esc(c.concept_type)}</div></td>
+      <td class="mono">${esc(c.kcd9.code||'—')}</td><td class="mono">${esc(c.icd11.code||'—')}</td><td class="mono">${esc(c.snomed.id||'—')}</td><td class="mono">${esc(c.icnp.code||'—')}</td>
+      <td><span class="vbadge ${verifyCount(c)===5?'ver':'unv'}">${verifyCount(c)}/5</span></td>
+      <td><button type="button" class="btn sm" data-edit="${esc(c.id)}" aria-label="${esc(c.concept_ko)} 편집">편집</button></td></tr>`).join('')}
+  </tbody></table></div></div>
+  <div class="card"><h3>🔎 학생 검증 미션 결과 집계</h3>
+    <div class="row" style="margin-top:8px"><label class="btn" for="adVImport" style="margin:0;color:inherit;font-size:.9rem">⬆ 학생 제출 JSON 불러오기 (여러 개 선택 가능)</label><input type="file" id="adVImport" accept=".json,application/json" multiple class="sr-only">
+    <button type="button" class="btn sm danger" id="adVClear" ${vSubs.length?'':'disabled'}>집계 초기화</button></div>
+    <div style="margin-top:8px">${vAggregateHTML()}</div></div>
+  <div class="card"><h3>⚠ 검증이 필요한 코드 (${unv.length})</h3><p class="small muted">코드는 있으나 verified:false인 항목입니다. 공식 원본으로 확인 후 편집 화면에서 체크하세요.</p>
+    <div class="table-scroll" style="margin-top:8px;max-height:360px"><table class="data"><thead><tr><th>ID</th><th>개념</th><th>표준</th><th>코드</th><th>명칭</th></tr></thead><tbody>
+    ${unv.map(x => `<tr><td class="mono">${esc(x.c.id)}</td><td>${esc(x.c.concept_ko)}</td><td><span class="std ${x.k}">${STANDARDS[x.k].label}</span></td><td class="mono">${esc(x.code)}</td><td class="small">${esc(x.k==='snomed' ? (x.c.snomed.fsn||x.c.snomed.pt) : x.c[x.k].name)}</td></tr>`).join('') || '<tr><td colspan="5">모두 검증되었습니다.</td></tr>'}
+    </tbody></table></div>
+    <p class="small muted" style="margin-top:8px">미입력: ICD-11 ${empty.filter(x=>x.k==='icd11').length}건, ICNP ${empty.filter(x=>x.k==='icnp').length}건</p></div>`;
+}
+renderers.admin = renderAdmin;
+function nextId(){ let n = 1; const ids = new Set(DATA.map(c=>c.id)); while (ids.has('C'+String(n).padStart(3,'0'))) n++; return 'C'+String(n).padStart(3,'0'); }
+function editForm(c, isNew){
+  const v = (k) => esc(k);
+  const ver = (k) => `<label class="check"><input type="checkbox" name="${k}.verified" ${c[k].verified?'checked':''}> 검증 완료 (verified)</label>`;
+  return `<form id="editForm">
+    <div class="form-grid">
+      <div><label for="f-id">ID</label><input id="f-id" name="id" type="text" value="${v(c.id)}" ${isNew?'':'readonly'} required></div>
+      <div><label for="f-ko">개념(한글)</label><input id="f-ko" name="concept_ko" type="text" value="${v(c.concept_ko)}" required></div>
+      <div><label for="f-en">개념(영문)</label><input id="f-en" name="concept_en" type="text" value="${v(c.concept_en)}"></div>
+      <div><label for="f-cat">영역</label><input id="f-cat" name="category" type="text" value="${v(c.category)}" list="catList"><datalist id="catList">${Array.from(new Set(DATA.map(x=>x.category))).map(x=>`<option value="${esc(x)}">`).join('')}</datalist></div>
+      <div><label for="f-type">유형</label><select id="f-type" name="concept_type">${Object.keys(TYPE_LABEL).map(t=>`<option value="${t}" ${c.concept_type===t?'selected':''}>${esc(TYPE_LABEL[t])}</option>`).join('')}</select></div>
+    </div>
+    <fieldset><legend><span class="std kcd9">KCD-9</span></legend><div class="form-grid">
+      <div><label for="f-k-code">코드</label><input id="f-k-code" name="kcd9.code" type="text" value="${v(c.kcd9.code)}"></div>
+      <div><label for="f-k-name">명칭</label><input id="f-k-name" name="kcd9.name" type="text" value="${v(c.kcd9.name)}"></div>
+      <div><label for="f-k-ch">장</label><input id="f-k-ch" name="kcd9.chapter" type="text" value="${v(c.kcd9.chapter)}"></div>
+      <div><label for="f-k-bl">블록</label><input id="f-k-bl" name="kcd9.block" type="text" value="${v(c.kcd9.block)}"></div></div>${ver('kcd9')}</fieldset>
+    <fieldset><legend><span class="std icd10">ICD-10 (WHO)</span></legend><div class="form-grid">
+      <div><label for="f-i10-code">코드</label><input id="f-i10-code" name="icd10.code" type="text" value="${v(c.icd10.code)}"></div>
+      <div><label for="f-i10-name">명칭</label><input id="f-i10-name" name="icd10.name" type="text" value="${v(c.icd10.name)}"></div></div>${ver('icd10')}</fieldset>
+    <fieldset><legend><span class="std icd11">ICD-11</span></legend><div class="form-grid">
+      <div><label for="f-i11-code">코드</label><input id="f-i11-code" name="icd11.code" type="text" value="${v(c.icd11.code)}" placeholder="WHO ICD-11 Browser로 확인"></div>
+      <div><label for="f-i11-name">명칭</label><input id="f-i11-name" name="icd11.name" type="text" value="${v(c.icd11.name)}"></div></div>${ver('icd11')}</fieldset>
+    <fieldset><legend><span class="std snomed">SNOMED CT</span></legend><div class="form-grid">
+      <div><label for="f-s-id">Concept ID</label><input id="f-s-id" name="snomed.id" type="text" value="${v(c.snomed.id)}" inputmode="numeric"></div>
+      <div><label for="f-s-fsn">FSN</label><input id="f-s-fsn" name="snomed.fsn" type="text" value="${v(c.snomed.fsn)}"></div>
+      <div><label for="f-s-pt">선호어(PT)</label><input id="f-s-pt" name="snomed.pt" type="text" value="${v(c.snomed.pt)}"></div>
+      <div><label for="f-s-ko">한국어 용어</label><input id="f-s-ko" name="snomed.term_ko" type="text" value="${v(c.snomed.term_ko)}"></div>
+      <div><label for="f-s-tag">의미 태그</label><input id="f-s-tag" name="snomed.semantic_tag" type="text" value="${v(c.snomed.semantic_tag)}"></div></div>
+      <label for="f-s-par" style="margin-top:8px">부모(is-a) — 한 줄에 하나, “ID | 용어” 형식</label>
+      <textarea id="f-s-par" name="snomed.parents">${esc(c.snomed.parents.map(p=>`${p.id} | ${p.term}`).join('\n'))}</textarea>${ver('snomed')}</fieldset>
+    <fieldset><legend><span class="std icnp">ICNP</span></legend><div class="form-grid">
+      <div><label for="f-n-code">코드</label><input id="f-n-code" name="icnp.code" type="text" value="${v(c.icnp.code)}" placeholder="ICN 공식 자료로 입력"></div>
+      <div><label for="f-n-name">공식 명칭</label><input id="f-n-name" name="icnp.name" type="text" value="${v(c.icnp.name)}"></div>
+      <div><label for="f-n-sug">제안 개념명</label><input id="f-n-sug" name="icnp.suggested_name" type="text" value="${v(c.icnp.suggested_name)}"></div></div>${ver('icnp')}</fieldset>
+    <label for="f-local">로컬 용어·약어 (쉼표로 구분)</label><input id="f-local" name="local_terms" type="text" value="${v(c.local_terms.join(', '))}">
+    <label for="f-note" style="margin-top:8px">간호 연관 메모</label><textarea id="f-note" name="nursing_note">${esc(c.nursing_note)}</textarea>
+    <label for="f-tp" style="margin-top:8px">학습 포인트</label><textarea id="f-tp" name="teaching_point">${esc(c.teaching_point)}</textarea>
+    <p class="small" id="editErr" role="alert" style="color:var(--danger)"></p>
+    <div class="row" style="margin-top:10px">${isNew ? '' : '<button type="button" class="btn danger" id="edDelete">삭제</button>'}<span class="spacer"></span><button type="button" class="btn" data-close="1">취소</button><button type="submit" class="btn primary">저장</button></div>
+  </form>`;
+}
+function openEditor(id){
+  const isNew = !id;
+  const base = isNew ? normalizeConcept({ id:nextId(), concept_ko:'', concept_en:'', category:'', concept_type:'disorder', local_terms:[] }) : clone(DATA.find(c => c.id === id));
+  if (!base) return;
+  openModal({ title: isNew ? '개념 추가' : `개념 편집 — ${base.id}`, html: editForm(base, isNew), onMount(back, close){
+    const form = $('#editForm', back);
+    form.addEventListener('submit', e => {
+      e.preventDefault();
+      const fd = new FormData(form); const o = clone(base);
+      for (const [k, val] of fd.entries()){
+        if (k.endsWith('.verified')) continue;
+        if (k === 'local_terms') { o.local_terms = String(val).split(',').map(s=>s.trim()).filter(Boolean); continue; }
+        if (k === 'snomed.parents') { o.snomed.parents = String(val).split('\n').map(l=>l.trim()).filter(Boolean).map(l => { const [a,...b] = l.split('|'); return b.length ? { id:a.trim(), term:b.join('|').trim() } : { id:'', term:a.trim() }; }); continue; }
+        const [a, b] = k.split('.');
+        if (b) o[a][b] = String(val).trim(); else o[a] = String(val).trim();
+      }
+      STD_KEYS.forEach(k => o[k].verified = !!form.elements[k+'.verified'].checked);
+      if (!o.id || !/^[\w-]+$/.test(o.id)) { $('#editErr', back).textContent = 'ID는 영문·숫자·_- 만 사용할 수 있습니다.'; return; }
+      if (!o.concept_ko) { $('#editErr', back).textContent = '개념(한글)은 필수입니다.'; return; }
+      if (isNew && DATA.some(c => c.id === o.id)) { $('#editErr', back).textContent = '이미 존재하는 ID입니다.'; return; }
+      if (o.snomed.id && !/^\d{6,18}$/.test(o.snomed.id)) { $('#editErr', back).textContent = 'SNOMED CT ID는 6~18자리 숫자입니다.'; return; }
+      const n = normalizeConcept(o);
+      if (isNew) DATA.push(n); else DATA[DATA.findIndex(c => c.id === base.id)] = n;
+      saveData(); close(); renderAdmin(); toast('저장했습니다');
+    });
+    const del = $('#edDelete', back);
+    if (del) del.addEventListener('click', () => {
+      if (!window.confirm(`${base.id} ${base.concept_ko} 개념을 삭제할까요?`)) return;
+      DATA = DATA.filter(c => c.id !== base.id); saveData(); close(); renderAdmin(); toast('삭제했습니다');
+    });
+  }});
+}
+$('#adminBox').addEventListener('click', e => {
+  const t = e.target.closest('button'); if (!t || !instructor) return;
+  if (t.dataset.edit) return openEditor(t.dataset.edit);
+  if (t.id === 'adAdd') return openEditor(null);
+  if (t.dataset.vapply) return vApply(t.dataset.vapply, t.dataset.val);
+  if (t.id === 'adVClear'){ if (!window.confirm('불러온 학생 제출 집계를 지울까요?')) return; vSubs = []; Store.set(KEYS.vsubs, vSubs); renderAdmin(); return; }
+  if (t.id === 'adExport'){
+    const payload = { app:'Nursing Terminology Explorer', schema:1, exported_at:new Date().toISOString(), note:'교육용 데이터. 실제 의무기록·청구에는 공식 원본 사용', data:DATA };
+    try {
+      const blob = new Blob([JSON.stringify(payload, null, 2)], { type:'application/json' });
+      const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+      a.download = `nursing_terminology_data_${new Date().toISOString().slice(0,10)}.json`;
+      document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 500);
+      toast('JSON 파일을 내보냈습니다');
+    } catch(err){ toast('내보내기에 실패했습니다: ' + err.message); }
+    return;
+  }
+  if (t.id === 'adPin'){
+    return openModal({ title:'PIN 변경', narrow:true, html:`<form id="pinChg"><label for="np1">새 PIN (숫자 4~8자리)</label><input id="np1" type="password" inputmode="numeric" maxlength="8">
+      <label for="np2" style="margin-top:8px">새 PIN 확인</label><input id="np2" type="password" inputmode="numeric" maxlength="8"><p class="small" id="pinChgErr" role="alert" style="color:var(--danger)"></p>
+      <div class="row"><span class="spacer"></span><button class="btn primary" type="submit">변경</button></div></form>`, onMount(back, close){
+        $('#pinChg', back).addEventListener('submit', e => { e.preventDefault();
+          const a = $('#np1', back).value, b = $('#np2', back).value;
+          if (!/^\d{4,8}$/.test(a)) { $('#pinChgErr', back).textContent = '숫자 4~8자리로 입력하세요.'; return; }
+          if (a !== b) { $('#pinChgErr', back).textContent = '두 PIN이 일치하지 않습니다.'; return; }
+          Store.set(KEYS.pin, a); close(); toast('PIN을 변경했습니다' + (Store.available() ? '' : ' (저장소 차단: 이 창에서만 유효)'));
+        }); } });
+  }
+  if (t.id === 'adReset'){
+    if (!window.confirm('편집 내용을 모두 버리고 내장 기본 데이터로 되돌릴까요? (먼저 JSON 내보내기를 권장)')) return;
+    DATA = TERMINOLOGY_DATA.map(normalizeConcept); Store.remove(KEYS.data); renderAdmin(); toast('기본 데이터로 초기화했습니다');
+  }
+});
+$('#adminBox').addEventListener('change', e => {
+  if (e.target.id === 'adVImport' && e.target.files && e.target.files.length){
+    const files = Array.from(e.target.files); let ok = 0, bad = 0, left = files.length;
+    files.forEach(f => { const rd = new FileReader();
+      rd.onload = () => { try { const p = JSON.parse(String(rd.result));
+          if (!p || p.type !== 'nte-verification' || !Array.isArray(p.results)) throw new Error('형식 오류');
+          const results = p.results.filter(r => r && typeof r.task_id === 'string' && V_STATUS[r.status]).map(r => ({ task_id:r.task_id, status:r.status, value:String(r.value||''), source:String(r.source||''), note:String(r.note||'') }));
+          vSubs.push({ student:String(p.student||f.name), file:f.name, results }); ok++;
+        } catch(err){ bad++; }
+        if (--left === 0){ Store.set(KEYS.vsubs, vSubs); renderAdmin(); toast(`제출 ${ok}건 불러옴${bad?` · 실패 ${bad}건`:''}`); } };
+      rd.onerror = () => { bad++; if (--left === 0){ Store.set(KEYS.vsubs, vSubs); renderAdmin(); toast(`제출 ${ok}건 불러옴 · 실패 ${bad}건`); } };
+      rd.readAsText(f); });
+    e.target.value = ''; return;
+  }
+  if (e.target.id !== 'adImport' || !e.target.files || !e.target.files[0]) return;
+  const file = e.target.files[0];
+  const reader = new FileReader();
+  reader.onload = () => {
+    try {
+      const parsed = JSON.parse(String(reader.result));
+      const arr = Array.isArray(parsed) ? parsed : (parsed && Array.isArray(parsed.data) ? parsed.data : null);
+      if (!arr || !arr.length || !arr.every(validConcept)) throw new Error('개념 배열(id, concept_ko 필수) 형식이 아닙니다');
+      const ids = arr.map(c=>c.id); if (new Set(ids).size !== ids.length) throw new Error('중복된 ID가 있습니다');
+      if (!window.confirm(`${arr.length}개 개념을 불러와 현재 데이터를 대체할까요?`)) return;
+      DATA = arr.map(normalizeConcept); saveData(); renderAdmin(); toast(`${arr.length}개 개념을 불러왔습니다`);
+    } catch(err){ toast('불러오기 실패: ' + err.message); }
+  };
+  reader.onerror = () => toast('파일을 읽지 못했습니다');
+  reader.readAsText(file);
+  e.target.value = '';
+});
+
+/* =========================================================
+   Progress modal & init
+   ========================================================= */
+$('#progressBtn').addEventListener('click', () => {
+  const items = progressItems();
+  openModal({ title:'학습 진도', narrow:true, html:`<ul style="list-style:none;padding:0;margin:0">${items.map(i => `<li style="padding:4px 0">${i.done?'✅':'⬜'} ${esc(i.label)}</li>`).join('')}</ul>
+    <div class="row" style="margin-top:12px"><span class="spacer"></span><button type="button" class="btn sm danger" id="progReset">진도 초기화</button></div>`,
+    onMount(back, close){ $('#progReset', back).addEventListener('click', () => { if (!window.confirm('학습 진도를 초기화할까요?')) return;
+      progress = { tabs:{}, viewed:{}, interop:false, records:{}, quiz:false }; saveProgress(); close(); toast('진도를 초기화했습니다'); }); } });
+});
+
+if (!Store.available()) $('#storageNotice').hidden = false;
+renderProgress();
+activateTab(Store.get(KEYS.tab, 'rosetta'));
+})();
+</script>
+</body>
+</html>
