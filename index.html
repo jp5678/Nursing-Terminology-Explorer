@@ -98,6 +98,8 @@ main{max-width:1240px;margin:0 auto;padding:20px 20px 28px}
 .muted{color:var(--muted)}
 .small{font-size:.84rem}
 .row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.multi-legend{margin:8px 0 0;padding:8px 10px;border-radius:8px;background:var(--warn-bg);border:1px solid color-mix(in srgb,var(--gold) 35%,transparent);line-height:1.6}
+.multi-legend .star{color:var(--gold);font-weight:700}
 .spacer{flex:1}
 .btn{border:1px solid var(--control-border);background:var(--surface);color:var(--text);padding:7px 14px;border-radius:8px;cursor:pointer;font-weight:500;font-size:.88rem;line-height:1.5}
 .btn:hover{background:var(--primary-soft);border-color:var(--primary);color:var(--accent-text)}
@@ -419,6 +421,7 @@ legend{padding:0 6px;font-weight:600;font-size:.86rem}
       <div class="card">
         <h3><span class="std snomed">SNOMED CT</span> is-a 관계</h3>
         <p class="small muted">내장 데이터 범위(직접 부모 + 최상위 계층) 내 시각화입니다. 주황색 선은 다중 부모를 뜻합니다.</p>
+        <p class="multi-legend small" id="multiLegend"></p>
         <div class="row" id="multiChips" style="margin:8px 0"></div>
         <div class="svg-wrap" id="snomedSvg"></div>
         <div class="compare-box" id="hierCompare"></div>
@@ -511,7 +514,7 @@ legend{padding:0 6px;font-weight:600;font-size:.86rem}
      한글 표기는 ICNP 2019 한국어판 용어를 참고한 비공식 표기(verified 여부와 무관). ICN의 ICNP Browser는 2019 릴리스까지의 레거시 자료
    ========================================================= */
 const TERMINOLOGY_DATA = [
-  {"id":"C001","concept_ko":"제2형 당뇨병","concept_en":"Type 2 diabetes mellitus","category":"내분비","concept_type":"disorder","kcd9":{"code":"E11","name":"2형 당뇨병","chapter":"IV 내분비, 영양 및 대사 질환","block":"E10–E14 당뇨병","verified":true},"icd10":{"code":"E11","name":"Type 2 diabetes mellitus","verified":true},"icd11":{"code":"5A11","name":"Type 2 diabetes mellitus","verified":true},"snomed":{"id":"44054006","fsn":"Diabetes mellitus type 2 (disorder)","pt":"Type 2 diabetes mellitus","term_ko":"2형 당뇨병","semantic_tag":"disorder","parents":[{"id":"73211009","term":"Diabetes mellitus"}],"verified":true},"icnp":{"code":"80394007","name":"Hyperglycemia","suggested_name":"고혈당증","verified":false},"nursing_note":"간호사정 시 연관 개념: 혈당 모니터링, 저혈당 위험, 발 관리 교육","local_terms":["DM","NIDDM","T2DM","당뇨","당뇨병","2형당뇨"],"teaching_point":"SNOMED CT Korean Extension(2026-06-15 릴리스)에 한글 선호어 “2형 당뇨병”이 등재되어 있습니다(서버 조회 확인). 약어 “DM”만으로는 1형/2형 구분이 안 되는 점에 주의하세요."},
+  {"id":"C001","concept_ko":"2형 당뇨병","concept_en":"Type 2 diabetes mellitus","category":"내분비","concept_type":"disorder","kcd9":{"code":"E11","name":"2형 당뇨병","chapter":"IV 내분비, 영양 및 대사 질환","block":"E10–E14 당뇨병","verified":true},"icd10":{"code":"E11","name":"Type 2 diabetes mellitus","verified":true},"icd11":{"code":"5A11","name":"Type 2 diabetes mellitus","verified":true},"snomed":{"id":"44054006","fsn":"Diabetes mellitus type 2 (disorder)","pt":"Type 2 diabetes mellitus","term_ko":"2형 당뇨병","semantic_tag":"disorder","parents":[{"id":"73211009","term":"Diabetes mellitus"}],"verified":true},"icnp":{"code":"80394007","name":"Hyperglycemia","suggested_name":"고혈당증","verified":false},"nursing_note":"간호사정 시 연관 개념: 혈당 모니터링, 저혈당 위험, 발 관리 교육","local_terms":["DM","NIDDM","T2DM","당뇨","당뇨병","2형당뇨","제2형 당뇨병"],"teaching_point":"KCD-9(E11)과 SNOMED CT Korean Extension(2026-06-15 릴리스)의 한글 공식 명칭은 모두 “2형 당뇨병”입니다(공식 원본 대조 확인). 임상에서 흔히 쓰는 “제2형 당뇨병”은 같은 개념의 다른 표현으로, 로컬 용어로 기록됩니다. 약어 “DM”만으로는 1형/2형 구분이 안 되는 점에 주의하세요."},
   {"id":"C002","concept_ko":"저혈당","concept_en":"Hypoglycemia","category":"내분비","concept_type":"disorder","kcd9":{"code":"E16.2","name":"상세불명의 저혈당","chapter":"IV 내분비, 영양 및 대사 질환","block":"E15–E16 포도당조절 및 췌장내분비의 기타 장애","verified":true},"icd10":{"code":"E16.2","name":"Hypoglycaemia, unspecified","verified":true},"icd11":{"code":"5A41","name":"Hypoglycaemia without associated diabetes","verified":true},"snomed":{"id":"302866003","fsn":"Hypoglycemia (disorder)","pt":"Hypoglycemia","term_ko":"","semantic_tag":"disorder","parents":[{"id":"362969004","term":"Disorder of endocrine system"},{"id":"237630007","term":"Hypoglycemic disorder"}],"verified":true},"icnp":{"code":"302866003","name":"Hypoglycemia","suggested_name":"저혈당증","verified":true},"nursing_note":"저혈당 처치(예: 15-15 규칙) 후 재측정, 의식수준·발한·떨림 관찰","local_terms":["hypoglycemia","저혈당","low BS","혈당저하"],"teaching_point":"당뇨병 환자의 저혈당은 ICD/KCD 포함·제외 지침에 따라 E16.2가 아닌 당뇨병 범주로 분류될 수 있습니다. “분류는 규칙, 용어는 표현”의 차이를 보여주는 예입니다(KCD 지침 확인 필요)."},
   {"id":"C003","concept_ko":"갑상선기능저하증","concept_en":"Hypothyroidism","category":"내분비","concept_type":"disorder","kcd9":{"code":"E03.9","name":"상세불명의 갑상선기능저하증","chapter":"IV 내분비, 영양 및 대사 질환","block":"E00–E07 갑상선의 장애","verified":true},"icd10":{"code":"E03.9","name":"Hypothyroidism, unspecified","verified":true},"icd11":{"code":"5A00","name":"Hypothyroidism","verified":true},"snomed":{"id":"40930008","fsn":"","pt":"Hypothyroidism","term_ko":"","semantic_tag":"disorder","parents":[{"id":"14304000","term":"Disorder of thyroid gland"}],"verified":true},"icnp":{"code":"84229001","name":"Fatigue","suggested_name":"피로","verified":false},"nursing_note":"피로·추위 불내성 관찰, 갑상선호르몬제 공복 복용 교육","local_terms":["hypothyroidism","갑저","갑상선저하"],"teaching_point":""},
   {"id":"C004","concept_ko":"본태성 고혈압","concept_en":"Essential hypertension","category":"심혈관","concept_type":"disorder","kcd9":{"code":"I10","name":"본태성(원발성) 고혈압","chapter":"IX 순환계통의 질환","block":"I10–I15 고혈압성 질환","verified":true},"icd10":{"code":"I10","name":"Essential (primary) hypertension","verified":true},"icd11":{"code":"BA00","name":"Essential hypertension","verified":true},"snomed":{"id":"59621000","fsn":"Essential hypertension (disorder)","pt":"Essential hypertension","term_ko":"","semantic_tag":"disorder","parents":[{"id":"38341003","term":"Hypertensive disorder"}],"verified":true},"icnp":{"code":"129899009","name":"Blood pressure alteration","suggested_name":"혈압변화","verified":false},"nursing_note":"정확한 혈압 측정법, 투약 이행, 저염식 교육","local_terms":["HTN","고혈압","high BP","EHT"],"teaching_point":""},
@@ -994,7 +997,7 @@ function renderSnomedSvg(){
   if (!pNodes.length) edges += `<path class="edge dashed" d="M${W/2},${cN.top} L${W/2},${rootN.bottom}"/>`;
   edges += `<text class="e-label" x="${W/2 + 118}" y="${rootN.bottom + 18}">⋯ 중간 계층 생략</text>`;
   body = edges + body + pNodes.map(p=>p.svg).join('') + cN.svg;
-  if (multi) body += `<text class="banner" x="${W-12}" y="${H0-10}" text-anchor="end">★ 다중 부모 ${parents.length}개 (polyhierarchy)</text>`;
+  if (multi) body += `<text class="banner" x="${W-12}" y="${H0-10}" text-anchor="end">★${parents.length} 다중 부모: 부모 ${parents.length}개 (polyhierarchy)</text>`;
   const label = `${c.concept_ko}의 SNOMED CT 계층: 부모 ${parents.map(p=>p.term).join(', ') || '없음'}; 최상위 ${root.term}`;
   $('#snomedSvg').innerHTML = `<svg viewBox="0 0 ${W} ${H0}" role="img" aria-label="${esc(label)}">
     <defs><marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path class="arrow" d="M0,0 L10,5 L0,10 z"/></marker>
@@ -1010,12 +1013,17 @@ function renderSnomedSvg(){
   $$('#icdTree .leaf').forEach(b => b.setAttribute('aria-pressed', b.dataset.id === H.sel));
 }
 function renderHierarchy(){
-  $('#hierSelect').innerHTML = DATA.map(c => `<option value="${esc(c.id)}">${esc(c.concept_ko)} (${esc(c.snomed.id||'—')})${c.snomed.parents.length>1?' ★':''}</option>`).join('');
-  const two = DATA.filter(c => c.snomed.parents.length === 2).length;
-  $('#multiChips').innerHTML = '<span class="small muted">대표 다중 부모(3개 이상):</span> ' + DATA.filter(c => c.snomed.parents.length >= 3)
-    .sort((a,b) => b.snomed.parents.length - a.snomed.parents.length)
-    .map(c => `<button type="button" class="chip" data-id="${esc(c.id)}" style="border-color:var(--gold)">★ ${esc(c.concept_ko)} (${c.snomed.parents.length})</button>`).join('')
-    + (two ? `<span class="small muted">· 부모 2개 개념 ${two}개는 위 선택 목록의 ★로 확인</span>` : '');
+  /* ★ 표기 규칙(드롭다운·버튼 공통): ★ = SNOMED CT is-a 부모가 2개 이상인 다중 부모 개념, 숫자 = 부모 수 */
+  const np = c => c.snomed.parents.length;
+  const star = c => np(c) > 1 ? ` ★${np(c)}` : '';
+  $('#hierSelect').innerHTML = DATA.map(c => `<option value="${esc(c.id)}">${esc(c.concept_ko)} (${esc(c.snomed.id||'—')})${star(c)}</option>`).join('');
+  const multi = DATA.filter(c => np(c) >= 2), two = multi.filter(c => np(c) === 2).length, big = multi.filter(c => np(c) >= 3);
+  $('#multiLegend').innerHTML = `<b><span class="star">★</span> = 다중 부모 개념</b>: SNOMED CT에서 is-a 부모가 <b>2개 이상</b>인 개념입니다. ★ 옆 숫자는 부모 수입니다(예: ★3 = 부모 3개).<br>`
+    + `<b>위 선택 목록</b>: 다중 부모 개념 <b>전체 ${multi.length}개</b>에 ★를 표시합니다(부모 2개 ${two}개 + 3개 이상 ${big.length}개).<br>`
+    + `<b>아래 버튼</b>: 그중 부모가 <b>3개 이상</b>인 대표 개념 ${big.length}개만 모은 바로가기입니다.`;
+  $('#multiChips').innerHTML = '<span class="small muted">부모 3개 이상 바로가기:</span> ' + big
+    .sort((a,b) => np(b) - np(a) || a.concept_ko.localeCompare(b.concept_ko, 'ko'))
+    .map(c => `<button type="button" class="chip" data-id="${esc(c.id)}" style="border-color:var(--gold)" aria-label="${esc(c.concept_ko)}, 부모 ${np(c)}개">${esc(c.concept_ko)} ★${np(c)}</button>`).join('');
   renderIcdTree(); renderSnomedSvg();
 }
 renderers.hierarchy = renderHierarchy;
