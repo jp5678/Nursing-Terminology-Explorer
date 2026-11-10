@@ -20,7 +20,7 @@
      icd11  WHO ICD-11 MMS 릴리스 표(SimpleTabulation, ICD-11 Browser 의 Info 메뉴에서 제공)
      snomed SNOMED CT International (Snowstorm 서버, --snowstorm 로 주소 지정 시에만 실행)
      icnp   SNOMED CT의 ICNP 매핑 참조집합(진단 711112009 · 중재 712505008) (위와 같은 Snowstorm 서버 필요)
-     order  (원본 대조 아님) 계층 탐색 드롭다운이 한글 개념명 가나다순인지 검사. 인터넷 불필요
+     order  (원본 대조 아님) 계층 탐색 드롭다운·매핑 불일치 학습 코너가 한글 개념명 가나다순인지 검사. 인터넷 불필요
 
    주의
      - 사이트 구조가 바뀌면 대조가 실패할 수 있습니다. 그 경우 "조회 실패"로 보고하며
@@ -204,22 +204,41 @@ async function verifyIcnp(data) {
 }
 
 /* ---------------- 화면 목록 정렬 (인터넷 불필요) ---------------- */
-// 계층 탐색 드롭다운(#hierSelect)을 만드는 실제 코드 한 줄을 파일에서 꺼내 실행하고,
-// 나온 항목이 한글 개념명(concept_ko) 가나다순인지 확인합니다. 데이터가 늘어도 순서가 유지되는지 봅니다.
-async function verifyOrder(data) {
-  const html = fs.readFileSync(FILE, 'utf8');
-  const m = html.match(/\$\('#hierSelect'\)\.innerHTML = ([^\n]+);\n/);
-  if (!m) { add('order', null, '', 'error', '계층 탐색 드롭다운(#hierSelect)을 만드는 코드를 찾지 못함'); return; }
-  let out;
-  try { out = vm.runInNewContext(m[1], { DATA: data, esc: s => String(s ?? ''), star: () => '' }); }
-  catch (e) { add('order', null, '', 'error', '드롭다운 코드를 실행하지 못함: ' + e.message); return; }
-  const byId = Object.fromEntries(data.map(c => [c.id, c.concept_ko]));
-  const names = [...String(out).matchAll(/<option value="([^"]*)"/g)].map(x => byId[x[1]] ?? x[1]);
+// 화면 목록을 만드는 실제 코드를 파일에서 꺼내 실행하고, 나온 항목이 한글 개념명 가나다순인지 확인합니다.
+//   1) 계층 탐색 드롭다운(#hierSelect)   2) 표준용어 개요 › 매핑 불일치 학습 코너(전체 보기)
+// 데이터가 늘거나 코드가 바뀌어도 순서가 유지되는지 봅니다.
+function checkSorted(label, names, expected) {
   const coll = new Intl.Collator('ko');
   const k = names.findIndex((n, i) => i > 0 && coll.compare(names[i - 1], n) > 0);
-  if (names.length !== data.length) add('order', null, '', 'diff', `계층 탐색 드롭다운 항목 수: 화면 ${names.length}개 / 데이터 ${data.length}개`);
-  else if (k > 0) add('order', null, '', 'diff', `계층 탐색 드롭다운이 가나다순이 아님: “${names[k - 1]}” 다음에 “${names[k]}”`);
+  if (names.length !== expected) add('order', null, '', 'diff', `${label} 항목 수: 화면 ${names.length}개 / 데이터 ${expected}개`);
+  else if (k > 0) add('order', null, '', 'diff', `${label}: 가나다순이 아님 — “${names[k - 1]}” 다음에 “${names[k]}”`);
   else add('order', null, '', 'ok', '');
+}
+async function verifyOrder(data) {
+  const html = fs.readFileSync(FILE, 'utf8');
+  const byId = Object.fromEntries(data.map(c => [c.id, c.concept_ko]));
+  const getConcept = id => data.find(c => c.id === id);
+
+  let label = '계층 탐색 드롭다운';
+  try {
+    const m = html.match(/\$\('#hierSelect'\)\.innerHTML = ([^\n]+);\n/);
+    if (!m) throw new Error('#hierSelect 을 만드는 코드를 찾지 못함');
+    const out = vm.runInNewContext(m[1], { DATA: data, esc: s => String(s ?? ''), star: () => '' });
+    checkSorted(label, [...String(out).matchAll(/<option value="([^"]*)"/g)].map(x => byId[x[1]] ?? x[1]), data.length);
+  } catch (e) { add('order', null, '', 'error', `${label}: ${e.message}`); }
+
+  label = '매핑 불일치 학습 코너';
+  try {
+    const arr = html.match(/\nconst MISMATCH = (\[[\s\S]*?\n\]);/);
+    const nm = html.match(/\n\s*const mmName = ([^\n]+);\n/);
+    const ls = html.match(/\n\s*const list = (MISMATCH[^\n]+);\n/);
+    if (!arr || !ls) throw new Error('MISMATCH 배열 또는 목록을 만드는 코드를 찾지 못함');
+    const ctx = { getConcept, MM: { type: 'all' } };
+    ctx.MISMATCH = vm.runInNewContext(arr[1], ctx);
+    if (nm) ctx.mmName = vm.runInNewContext(nm[1], ctx);
+    const list = vm.runInNewContext(ls[1], ctx);
+    checkSorted(label, list.map(m => byId[m.cid] ?? m.cid), ctx.MISMATCH.length);
+  } catch (e) { add('order', null, '', 'error', `${label}: ${e.message}`); }
 }
 
 /* ---------------- main ---------------- */
