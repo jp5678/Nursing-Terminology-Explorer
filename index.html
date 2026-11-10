@@ -669,11 +669,13 @@ function chosung(s){
   return Array.from(String(s)).map(ch => { const n = ch.charCodeAt(0) - 0xAC00; return (n >= 0 && n < 11172) ? CHO[Math.floor(n/588)] : ch; }).join('');
 }
 const norm = s => String(s||'').toLowerCase().replace(/[\s\-–·.,()\/\[\]_:]/g,'');
+/* 목록 정렬: 한글 개념명 가나다순(오름차순). 이름이 같으면 ID 순 */
+const byNameAsc = (a, b) => a.concept_ko.localeCompare(b.concept_ko, 'ko') || a.id.localeCompare(b.id);
 function searchConcepts(q){
   const raw = String(q||'').trim();
-  if (!raw) return DATA.slice();
+  if (!raw) return DATA.slice().sort(byNameAsc);
   const qn = norm(raw);
-  if (!qn) return DATA.slice();
+  if (!qn) return DATA.slice().sort(byNameAsc);
   const choOnly = /^[ㄱ-ㅎ]+$/.test(qn);
   const scored = DATA.map(c => {
     const fields = [c.concept_ko, c.concept_en, ...c.local_terms, c.kcd9.code, c.kcd9.name, c.icd10.code, c.icd10.name, c.icd11.code,
@@ -693,7 +695,7 @@ function searchConcepts(q){
     }
     return { c, score };
   }).filter(x => x.score > 0);
-  scored.sort((a,b) => b.score - a.score || a.c.id.localeCompare(b.c.id));
+  scored.sort((a,b) => b.score - a.score || byNameAsc(a.c, b.c));
   return scored.map(x => x.c);
 }
 
@@ -804,7 +806,7 @@ $('.tabs').addEventListener('keydown', e => {
 /* =========================================================
    1. Rosetta View
    ========================================================= */
-const R = { sel:'C001', q:'', cat:'전체', type:'전체' };
+const R = { sel:(DATA.slice().sort(byNameAsc)[0] || { id:'C001' }).id, q:'', cat:'전체', type:'전체' };   // 정렬된 목록의 첫 개념을 기본 선택
 function renderFilters(){
   const cats = ['전체', ...Array.from(new Set(DATA.map(c => c.category).filter(Boolean)))];
   $('#catFilters').innerHTML = cats.map(c => `<button type="button" class="chip" data-cat="${esc(c)}" aria-pressed="${R.cat===c}">${esc(c)}</button>`).join('');
