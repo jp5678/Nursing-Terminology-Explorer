@@ -700,6 +700,7 @@ function chosung(s){
 const norm = s => String(s||'').toLowerCase().replace(/[\s\-–·.,()\/\[\]_:]/g,'');
 /* 목록 정렬: 한글 개념명 가나다순(오름차순). 이름이 같으면 ID 순 */
 const byNameAsc = (a, b) => a.concept_ko.localeCompare(b.concept_ko, 'ko') || a.id.localeCompare(b.id);
+const koCmp = (a, b) => String(a ?? '').localeCompare(String(b ?? ''), 'ko');   // 문자열 가나다순
 function searchConcepts(q){
   const raw = String(q||'').trim();
   if (!raw) return DATA.slice().sort(byNameAsc);
@@ -837,7 +838,7 @@ $('.tabs').addEventListener('keydown', e => {
    ========================================================= */
 const R = { sel:(DATA.slice().sort(byNameAsc)[0] || { id:'C001' }).id, q:'', cat:'전체', type:'전체' };   // 정렬된 목록의 첫 개념을 기본 선택
 function renderFilters(){
-  const cats = ['전체', ...Array.from(new Set(DATA.map(c => c.category).filter(Boolean)))];
+  const cats = ['전체', ...Array.from(new Set(DATA.map(c => c.category).filter(Boolean))).sort(koCmp)];
   $('#catFilters').innerHTML = cats.map(c => `<button type="button" class="chip" data-cat="${esc(c)}" aria-pressed="${R.cat===c}">${esc(c)}</button>`).join('');
   const types = ['전체','disorder','finding','procedure','event'];
   $('#typeFilters').innerHTML = types.map(t => `<button type="button" class="chip" data-type="${t}" aria-pressed="${R.type===t}">${t==='전체'?'모든 유형':esc(TYPE_LABEL[t])}</button>`).join('');
@@ -916,7 +917,7 @@ function renderDetail(){
         <h2>${esc(c.concept_ko)}</h2><div class="en">${esc(c.concept_en)}</div></div>
       <span class="type-badge" title="SNOMED CT 계층 유형">${esc(TYPE_LABEL[c.concept_type])}</span>
     </div>
-    <div class="local-terms" aria-label="로컬 용어·약어">${c.local_terms.map(t=>`<span class="chip">${esc(t)}</span>`).join('')}</div>
+    <div class="local-terms" aria-label="로컬 용어·약어">${c.local_terms.slice().sort(koCmp).map(t=>`<span class="chip">${esc(t)}</span>`).join('')}</div>
     <p class="small" style="margin-top:10px">🩺 <b>간호 연관</b>: ${esc(c.nursing_note)}</p>
     <div class="std-grid">${STD_KEYS.map(k => stdCard(c,k)).join('')}</div>
     ${insightHTML(c)}`;
@@ -971,7 +972,7 @@ function renderIcdTree(){
   }).join('');
   if (outside.length){
     html += `<div class="outside"><b>ICD 분류 체계 밖의 개념</b><p class="small">아래 개념은 ICD(질병 분류)에 대응 범주가 없지만 SNOMED CT에는 있습니다.</p>
-      ${outside.map(c => `<button type="button" class="leaf" style="margin-left:0;width:100%" data-id="${esc(c.id)}" aria-pressed="${c.id===H.sel}"><code>—</code><span>${esc(c.concept_ko)} <span class="type-badge">${esc(c.concept_type)}</span></span></button>`).join('')}</div>`;
+      ${outside.sort(byNameAsc).map(c => `<button type="button" class="leaf" style="margin-left:0;width:100%" data-id="${esc(c.id)}" aria-pressed="${c.id===H.sel}"><code>—</code><span>${esc(c.concept_ko)} <span class="type-badge">${esc(c.concept_type)}</span></span></button>`).join('')}</div>`;
   }
   $('#icdTree').innerHTML = html;
 }
@@ -1042,7 +1043,7 @@ function renderHierarchy(){
     + `<b>위 선택 목록</b>: 다중 부모 개념 <b>전체 ${multi.length}개</b>에 ★를 표시합니다(부모 2개 ${two}개 + 3개 이상 ${big.length}개).<br>`
     + `<b>아래 버튼</b>: 그중 부모가 <b>3개 이상</b>인 대표 개념 ${big.length}개만 모은 바로가기입니다.`;
   $('#multiChips').innerHTML = '<span class="small muted">부모 3개 이상 바로가기:</span> ' + big
-    .sort((a,b) => np(b) - np(a) || a.concept_ko.localeCompare(b.concept_ko, 'ko'))
+    .sort(byNameAsc)
     .map(c => `<button type="button" class="chip" data-id="${esc(c.id)}" style="border-color:var(--gold)" aria-label="${esc(c.concept_ko)}, 부모 ${np(c)}개">${esc(c.concept_ko)} ★${np(c)}</button>`).join('');
   renderIcdTree(); renderSnomedSvg();
 }
@@ -1076,6 +1077,8 @@ const INTEROP_TARGETS = ['C001','C002','C004','C017','C022','C023','C025','C027'
 /* 앱 데이터에 없는 상위 개념 카드 (SNOMED CT 2026-11 International에서 활성·포함관계 확인: 감기 ⊂ 바이러스성 상기도감염 ⊂ 상기도감염) */
 const INTEROP_EXTRA = { X_URI:{ id:'X_URI', concept_ko:'상기도감염 (상위 개념)', concept_en:'Upper respiratory infection', snomed:{ id:'54150009', pt:'Upper respiratory infection' }, kcd9:{ code:'' } } };
 const ioConcept = id => INTEROP_EXTRA[id] || getConcept(id);
+const ioByTerm = (a, b) => koCmp(a.term, b.term);                                  // 로컬 용어 가나다순
+const ioByConcept = (a, b) => byNameAsc(ioConcept(a), ioConcept(b));           // 표준 개념(ID) 가나다순
 const IO = { map:{}, selected:null, checked:false };
 function renderInterop(){
   const termBtn = t => {
@@ -1083,16 +1086,16 @@ function renderInterop(){
     return `<button type="button" class="term ${t.h.toLowerCase()} ${cls}" draggable="true" data-term="${t.id}" aria-pressed="${IO.selected===t.id}"
       aria-label="병원 ${t.h} 로컬 용어 ${esc(t.term)}${IO.map[t.id] ? ', 매핑됨 — 누르면 해제' : ''}">${esc(t.term)}</button>`;
   };
-  $('#poolA').innerHTML = INTEROP_TERMS.filter(t => t.h==='A' && !IO.map[t.id]).map(termBtn).join('') || '<span class="small muted">모두 매핑됨 ✓</span>';
-  $('#poolB').innerHTML = INTEROP_TERMS.filter(t => t.h==='B' && !IO.map[t.id]).map(termBtn).join('') || '<span class="small muted">모두 매핑됨 ✓</span>';
-  $('#targets').innerHTML = INTEROP_TARGETS.map(id => {
+  $('#poolA').innerHTML = INTEROP_TERMS.filter(t => t.h==='A' && !IO.map[t.id]).sort(ioByTerm).map(termBtn).join('') || '<span class="small muted">모두 매핑됨 ✓</span>';
+  $('#poolB').innerHTML = INTEROP_TERMS.filter(t => t.h==='B' && !IO.map[t.id]).sort(ioByTerm).map(termBtn).join('') || '<span class="small muted">모두 매핑됨 ✓</span>';
+  $('#targets').innerHTML = INTEROP_TARGETS.slice().sort(ioByConcept).map(id => {
     const c = ioConcept(id); if (!c) return '';
     const mapped = INTEROP_TERMS.filter(t => IO.map[t.id] === id);
     return `<div class="target ${IO.selected ? 'ready' : ''}" data-target="${id}" role="button" tabindex="0" aria-label="표준코드 ${esc(c.concept_ko)} SNOMED CT ${esc(c.snomed.id)}${IO.selected?' — 선택한 용어를 여기에 매핑':''}">
       <div><span class="std snomed">SNOMED CT</span> <span class="tid">${esc(c.snomed.id)}</span></div>
       <div><b>${esc(c.snomed.pt)}</b></div>
       <div class="small muted">${esc(c.concept_ko)} · KCD ${esc(c.kcd9.code || '—')}</div>
-      <div class="drop">${mapped.map(termBtn).join('')}</div></div>`;
+      <div class="drop">${mapped.sort(ioByTerm).map(termBtn).join('')}</div></div>`;
   }).join('');
 }
 function assign(termId, targetId){
@@ -1147,15 +1150,15 @@ $('#interopCheck').addEventListener('click', () => {
       <p class="small">표준 없이 문자열로 합치면 <b>${INTEROP_TERMS.length}개</b>의 서로 다른 항목이 생기지만, 표준코드로 합치면 <b>${Object.keys(groups).length}개</b> 임상 개념으로 정확히 집계됩니다.</p></div>
       <div class="grid-2" style="margin-top:12px">
         <div class="card anim-left"><h3>병원 A 원본 (환자 ${sumA}명)</h3><div class="table-scroll"><table class="data"><thead><tr><th>로컬 용어</th><th>환자 수</th></tr></thead><tbody>
-          ${INTEROP_TERMS.filter(t=>t.h==='A').map(t=>`<tr><td>${esc(t.term)}</td><td>${t.n}</td></tr>`).join('')}</tbody></table></div></div>
+          ${INTEROP_TERMS.filter(t=>t.h==='A').sort(ioByTerm).map(t=>`<tr><td>${esc(t.term)}</td><td>${t.n}</td></tr>`).join('')}</tbody></table></div></div>
         <div class="card anim-right"><h3>병원 B 원본 (환자 ${sumB}명)</h3><div class="table-scroll"><table class="data"><thead><tr><th>로컬 용어</th><th>환자 수</th></tr></thead><tbody>
-          ${INTEROP_TERMS.filter(t=>t.h==='B').map(t=>`<tr><td>${esc(t.term)}</td><td>${t.n}</td></tr>`).join('')}</tbody></table></div></div>
+          ${INTEROP_TERMS.filter(t=>t.h==='B').sort(ioByTerm).map(t=>`<tr><td>${esc(t.term)}</td><td>${t.n}</td></tr>`).join('')}</tbody></table></div></div>
       </div>
       <div class="card" style="margin-top:14px"><h3>⬇ 통합 테이블 (SNOMED CT 기준)</h3><div class="table-scroll"><table class="data">
         <thead><tr><th>SNOMED CT</th><th>개념</th><th>KCD</th><th>병원 A 원문</th><th>병원 B 원문</th><th>합계</th></tr></thead><tbody>
-        ${Object.keys(groups).map((id,i) => { const c = ioConcept(id), g = groups[id]; const tot = [...g.A,...g.B].reduce((s,t)=>s+t.n,0);
+        ${Object.keys(groups).sort(ioByConcept).map((id,i) => { const c = ioConcept(id), g = groups[id]; const tot = [...g.A,...g.B].reduce((s,t)=>s+t.n,0);
           return `<tr class="anim-row" style="animation-delay:${0.7 + i*0.18}s"><td class="mono">${esc(c.snomed.id)}</td><td>${esc(c.concept_ko)}</td><td class="mono">${esc(c.kcd9.code||'—')}</td>
-            <td>${g.A.map(t=>`${esc(t.term)} (${t.n})`).join('<br>')}</td><td>${g.B.map(t=>`${esc(t.term)} (${t.n})`).join('<br>')}</td><td><b>${tot}</b></td></tr>`; }).join('')}
+            <td>${g.A.sort(ioByTerm).map(t=>`${esc(t.term)} (${t.n})`).join('<br>')}</td><td>${g.B.sort(ioByTerm).map(t=>`${esc(t.term)} (${t.n})`).join('<br>')}</td><td><b>${tot}</b></td></tr>`; }).join('')}
         </tbody></table></div>
         <div class="insight small">🌳 <b>계층을 이용한 상위 집계</b>: “URI”와 “감기 기운”은 서로 다른 개념이라 같은 행으로 합치면 안 됩니다. 대신 SNOMED CT 계층(감기 ⊂ 바이러스성 상기도감염 ⊂ 상기도감염)을 따라 올리면 <b>상기도감염 전체 = ${INTEROP_TERMS.filter(t=>t.ans==='X_URI'||t.ans==='C031').reduce((s,t)=>s+t.n,0)}명</b>으로 정확히 집계할 수 있습니다. 분류체계로는 어려운 “용어체계의 상하위 질의”입니다.</div>
         <p class="small muted">※ 환자 수는 학습용 가상 수치입니다.</p></div>`;
@@ -1546,7 +1549,7 @@ function getPath(o, path){ return path.split('.').reduce((a,k)=>a==null?a:a[k], 
 function setPath(o, path, v){ const ks = path.split('.'); const last = ks.pop(); ks.reduce((a,k)=>a[k], o)[last] = v; }
 function buildVTasks(){
   const out = [];
-  DATA.forEach(c => {
+  DATA.slice().sort(byNameAsc).forEach(c => {
     if (c.kcd9.code) ['kcd_name','kcd_chapter','kcd_block'].forEach(t => out.push({ id:`${c.id}.${t}`, cid:c.id, type:t }));
     out.push({ id:`${c.id}.icnp_name`, cid:c.id, type:'icnp_name' });
   });
@@ -1707,7 +1710,8 @@ function vAggregateHTML(){
     else if (r.status === 'mismatch' && r.value){ a.mismatch[r.value] = (a.mismatch[r.value]||0) + 1; }
     if (r.source) a.sources.push(`${sub.student||'익명'}: ${r.source}`);
   }));
-  const tids = Object.keys(agg).sort();
+  const tName = id => (getConcept(id.split('.')[0]) || {}).concept_ko || id;
+  const tids = Object.keys(agg).sort((a,b) => koCmp(tName(a), tName(b)) || a.localeCompare(b));
   return `<p class="small muted">제출 ${vSubs.length}건 (${vSubs.map(s=>esc(s.student||'익명')).join(', ')}) · 과제 ${tids.length}개. <b>적용</b>은 해당 텍스트 필드만 바꾸며 verified 상태는 바꾸지 않습니다.</p>
   <div class="table-scroll" style="margin-top:8px;max-height:460px"><table class="data"><thead><tr><th>과제</th><th>현재 앱 값</th><th>일치</th><th>불일치 제안값 (응답 수)</th><th>못 찾음</th><th>근거</th></tr></thead><tbody>
   ${tids.map(id => { const a = agg[id]; const [cid, type] = id.split('.'); const c = getConcept(cid); const m = V_TYPES[type];
@@ -1760,7 +1764,7 @@ function verifyCount(c){ return STD_KEYS.filter(k => c[k].verified).length; }
 function renderAdmin(){
   if (!instructor) return;
   const unv = [];
-  DATA.forEach(c => STD_KEYS.forEach(k => { const code = codeOf(c,k); if (code && !c[k].verified) unv.push({ c, k, code }); }));
+  DATA.slice().sort(byNameAsc).forEach(c => STD_KEYS.forEach(k => { const code = codeOf(c,k); if (code && !c[k].verified) unv.push({ c, k, code }); }));
   const empty = [];
   DATA.forEach(c => ['icd11','icnp'].forEach(k => { if (!codeOf(c,k)) empty.push({ c, k }); }));
   $('#adminBox').innerHTML = `
@@ -1775,7 +1779,7 @@ function renderAdmin(){
     </div>
     <p class="small muted" style="margin-top:8px">현재 개념 ${DATA.length}개 · 편집 내용은 이 브라우저에만 저장됩니다. 다음 학기 재사용·동료 공유는 <b>JSON 내보내기</b>를 사용하세요.${Store.available() ? '' : ' <b style="color:var(--warn)">(저장소 차단 상태 — 새로고침 시 사라짐)</b>'}</p></div>
   <div class="card"><h3>개념 목록</h3><div class="table-scroll" style="margin-top:8px;max-height:460px"><table class="data"><thead><tr><th>ID</th><th>개념</th><th>KCD</th><th>ICD-11</th><th>SNOMED</th><th>ICNP</th><th>검증</th><th>편집</th></tr></thead><tbody>
-    ${DATA.map(c => `<tr><td class="mono">${esc(c.id)}</td><td>${esc(c.concept_ko)}<div class="small muted">${esc(c.category)} · ${esc(c.concept_type)}</div></td>
+    ${DATA.slice().sort(byNameAsc).map(c => `<tr><td class="mono">${esc(c.id)}</td><td>${esc(c.concept_ko)}<div class="small muted">${esc(c.category)} · ${esc(c.concept_type)}</div></td>
       <td class="mono">${esc(c.kcd9.code||'—')}</td><td class="mono">${esc(c.icd11.code||'—')}</td><td class="mono">${esc(c.snomed.id||'—')}</td><td class="mono">${esc(c.icnp.code||'—')}</td>
       <td><span class="vbadge ${verifyCount(c)===5?'ver':'unv'}">${verifyCount(c)}/5</span></td>
       <td><button type="button" class="btn sm" data-edit="${esc(c.id)}" aria-label="${esc(c.concept_ko)} 편집">편집</button></td></tr>`).join('')}
@@ -1801,7 +1805,7 @@ function editForm(c, isNew){
       <div><label for="f-id">ID</label><input id="f-id" name="id" type="text" value="${v(c.id)}" ${isNew?'':'readonly'} required></div>
       <div><label for="f-ko">개념(한글)</label><input id="f-ko" name="concept_ko" type="text" value="${v(c.concept_ko)}" required></div>
       <div><label for="f-en">개념(영문)</label><input id="f-en" name="concept_en" type="text" value="${v(c.concept_en)}"></div>
-      <div><label for="f-cat">영역</label><input id="f-cat" name="category" type="text" value="${v(c.category)}" list="catList"><datalist id="catList">${Array.from(new Set(DATA.map(x=>x.category))).map(x=>`<option value="${esc(x)}">`).join('')}</datalist></div>
+      <div><label for="f-cat">영역</label><input id="f-cat" name="category" type="text" value="${v(c.category)}" list="catList"><datalist id="catList">${Array.from(new Set(DATA.map(x=>x.category))).sort(koCmp).map(x=>`<option value="${esc(x)}">`).join('')}</datalist></div>
       <div><label for="f-type">유형</label><select id="f-type" name="concept_type">${Object.keys(TYPE_LABEL).map(t=>`<option value="${t}" ${c.concept_type===t?'selected':''}>${esc(TYPE_LABEL[t])}</option>`).join('')}</select></div>
     </div>
     <fieldset><legend><span class="std kcd9">KCD-9</span></legend><div class="form-grid">
