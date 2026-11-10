@@ -18,7 +18,7 @@
      icd10  WHO ICD-10 2019판      https://icd.who.int/browse10/2019/en
      icd11  WHO ICD-11 MMS 릴리스 표(SimpleTabulation, ICD-11 Browser 의 Info 메뉴에서 제공)
      snomed SNOMED CT International (Snowstorm 서버, --snowstorm 로 주소 지정 시에만 실행)
-     icnp   SNOMED CT ICNP 참조집합 1157358007 (위와 같은 Snowstorm 서버 필요)
+     icnp   SNOMED CT의 ICNP 매핑 참조집합(진단 711112009 · 중재 712505008) (위와 같은 Snowstorm 서버 필요)
 
    주의
      - 사이트 구조가 바뀌면 대조가 실패할 수 있습니다. 그 경우 "조회 실패"로 보고하며
@@ -46,9 +46,9 @@ const ICD11_RELEASE = opt('icd11-release', '2026-01');
 const ICD11_FILE = opt('icd11-file', '');
 const SNOWSTORM = (opt('snowstorm', process.env.SNOWSTORM_URL || '')).replace(/\/$/, '');
 const SNOMED_BRANCH = opt('snomed-branch', 'MAIN');
-const ICNP_BRANCH = opt('icnp-branch', 'MAIN/SNOMEDCT-DERIVATIVES');
+const ICNP_BRANCH = opt('icnp-branch', 'MAIN');
 const JSON_OUT = opt('json', '');
-const ICNP_REFSET = '1157358007';
+const ICNP_REFSETS = ['711112009', '712505008'];   // ICNP 진단·중재 → SNOMED CT simple map
 const UA = 'nursing-terminology-explorer-verify/1.0 (educational data check)';
 const DELAY_MS = 500;
 
@@ -189,12 +189,12 @@ async function verifyIcnp(data) {
   const ids = [...new Set(rows.map(c => c.icnp.code))];
   try {
     const br = encodeURIComponent(ICNP_BRANCH).replace(/%2F/g, '/');
-    const ecl = `^${ICNP_REFSET} AND (${ids.join(' OR ')})`;
+    const ecl = `(${ICNP_REFSETS.map(r => '^' + r).join(' OR ')}) AND (${ids.join(' OR ')})`;
     const res = await ssGet(`/${br}/concepts?activeFilter=true&limit=200&ecl=${encodeURIComponent(ecl)}`);
     const found = Object.fromEntries((res.items || []).map(x => [String(x.conceptId), x.pt ? x.pt.term : '']));
     for (const c of rows) {
       const pt = found[c.icnp.code];
-      if (pt === undefined) add('icnp', c, c.icnp.code, 'diff', 'ICNP 참조집합의 활성 구성원이 아님');
+      if (pt === undefined) add('icnp', c, c.icnp.code, 'diff', 'ICNP 매핑 참조집합의 활성 구성원이 아님');
       else add('icnp', c, c.icnp.code, pt === c.icnp.name ? 'ok' : 'diff', pt === c.icnp.name ? '' : `명칭: 앱 “${c.icnp.name}” / 원본 “${pt}”`);
     }
   } catch (e) { add('icnp', null, '', 'error', '조회 실패: ' + e.message); }
