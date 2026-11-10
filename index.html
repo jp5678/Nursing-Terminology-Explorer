@@ -1036,7 +1036,7 @@ function renderHierarchy(){
   /* ★ 표기 규칙(드롭다운·버튼 공통): ★ = SNOMED CT is-a 부모가 2개 이상인 다중 부모 개념, 숫자 = 부모 수 */
   const np = c => c.snomed.parents.length;
   const star = c => np(c) > 1 ? ` ★${np(c)}` : '';
-  $('#hierSelect').innerHTML = DATA.map(c => `<option value="${esc(c.id)}">${esc(c.concept_ko)} (${esc(c.snomed.id||'—')})${star(c)}</option>`).join('');
+  $('#hierSelect').innerHTML = [...DATA].sort((a,b) => a.concept_ko.localeCompare(b.concept_ko, 'ko')).map(c => `<option value="${esc(c.id)}">${esc(c.concept_ko)} (${esc(c.snomed.id||'—')})${star(c)}</option>`).join('');
   const multi = DATA.filter(c => np(c) >= 2), two = multi.filter(c => np(c) === 2).length, big = multi.filter(c => np(c) >= 3);
   $('#multiLegend').innerHTML = `<b><span class="star">★</span> = 다중 부모 개념</b>: SNOMED CT에서 is-a 부모가 <b>2개 이상</b>인 개념입니다. ★ 옆 숫자는 부모 수입니다(예: ★3 = 부모 3개).<br>`
     + `<b>위 선택 목록</b>: 다중 부모 개념 <b>전체 ${multi.length}개</b>에 ★를 표시합니다(부모 2개 ${two}개 + 3개 이상 ${big.length}개).<br>`
