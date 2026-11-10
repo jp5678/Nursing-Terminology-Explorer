@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>간호 표준용어 탐색기</title>
-<meta name="description" content="AI융합 간호정보학 '간호·의료 표준용어' 단원용 인터랙티브 학습 앱 — KCD-9, ICD-10, ICD-11, SNOMED CT, ICNP 비교">
+<title>분류체계와 임상용어체계 — 간호 표준용어 탐색기</title>
+<meta name="description" content="분류체계(KCD-9·ICD-10·ICD-11)와 임상용어체계(SNOMED CT·ICNP)를 비교하는 간호 표준용어 탐색기(Classification and Clinical Terminology in Nursing) — AI융합 간호정보학 '간호·의료 표준용어' 단원용 인터랙티브 학습 앱">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans+KR:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -176,6 +176,13 @@ label{font-size:.88rem;color:var(--muted);display:block;margin-bottom:4px}
 .std-card .foot{margin-top:auto;display:flex;flex-wrap:wrap;gap:6px;align-items:center}
 .insight{margin-top:16px;padding:12px 14px;border-radius:8px;border:1px solid var(--primary-line);background:var(--primary-soft);font-size:.9rem}
 .insight b{color:var(--accent-text)}
+.sys-intro{display:flex;align-items:center;gap:10px 14px;flex-wrap:wrap;margin:0 0 16px;padding:12px 16px;border-radius:var(--radius);background:var(--surface);border:1px solid var(--border);border-left:4px solid var(--primary);font-size:.95rem;line-height:1.6}
+.sys-intro .si-item{margin:0;flex:1 1 300px}
+.sys-intro .si-tag{display:inline-block;padding:1px 9px;border-radius:6px;font-size:.84rem;font-weight:700;margin-right:2px;color:var(--on-primary)}
+.sys-intro .si-tag.cls{background:var(--b-kcd)} .sys-intro .si-tag.term{background:var(--b-snomed)}
+[data-theme="dark"] .sys-intro .si-tag{color:#0B1220}
+.sys-intro .si-link{flex:none;font-size:.84rem;font-weight:700;color:var(--muted);white-space:nowrap}
+@media (max-width:900px){.sys-intro .si-link{display:none}}
 .local-terms{display:flex;flex-wrap:wrap;gap:5px;margin-top:10px}
 .local-terms .chip{font-family:var(--f-mono);font-size:.84rem;background:var(--surface-2)}
 
@@ -342,7 +349,8 @@ legend{padding:0 6px;font-weight:600;font-size:.86rem}
   .tab{padding:6px 11px;font-size:.9rem}
   main{padding:16px 16px 24px}
   .brand .sub{display:none}
-  .brand h1{font-size:.96rem}
+  .brand h1{font-size:.95rem;line-height:1.25;white-space:normal;word-break:keep-all;overflow:visible;
+    display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}   /* 좁은 화면: 제목을 두 줄로 */
   .pill .bar{display:none}
   .concept-head h2{font-size:1.22rem}
   .compare-box,.vs{grid-template-columns:1fr}
@@ -363,8 +371,8 @@ legend{padding:0 6px;font-weight:600;font-size:.86rem}
   <a class="brand" id="homeLink" href="#" title="메인 화면(개념 검색·비교)으로 이동">
     <div class="logo" aria-hidden="true">✚</div>
     <div>
-      <h1>간호 표준용어 탐색기</h1>
-      <p class="sub">Nursing Terminology Explorer · AI융합 간호정보학</p>
+      <h1>분류체계와 임상용어체계</h1>
+      <p class="sub" lang="en">Classification and Clinical Terminology in Nursing <span lang="ko">· 간호 표준용어 탐색기</span></p>
     </div>
   </a>
   <div class="top-actions">
@@ -393,6 +401,11 @@ legend{padding:0 6px;font-weight:600;font-size:.86rem}
     <div class="panel-head">
       <div><h2>개념 검색·비교 <span class="muted small">Rosetta View</span></h2>
       <p>하나의 임상 개념이 5개 표준에서 어떻게 코드화되는지 나란히 비교합니다. 한글·영문·약어(DM, HTN)·코드·초성(ㄷㄴ)으로 검색하세요.</p></div>
+    </div>
+    <div class="sys-intro" role="note" aria-label="분류체계와 임상용어체계의 차이">
+      <p class="si-item"><span class="si-tag cls">분류체계</span> <b>KCD·ICD</b> — 통계·청구를 위해 질병을 <b>한 칸에만</b> 넣어 묶습니다.</p>
+      <span class="si-link" aria-hidden="true">↔ 매핑 ↔</span>
+      <p class="si-item"><span class="si-tag term">임상용어체계</span> <b>SNOMED CT·ICNP</b> — 기록·교환을 위해 임상 개념을 <b>여러 관계로 세밀하게</b> 표현합니다.</p>
     </div>
     <div class="rosetta">
       <div class="card">
