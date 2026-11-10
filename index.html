@@ -98,6 +98,8 @@ main{max-width:1240px;margin:0 auto;padding:20px 20px 28px}
 .muted{color:var(--muted)}
 .small{font-size:.84rem}
 .row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.multi-legend{margin:8px 0 0;padding:8px 10px;border-radius:8px;background:var(--warn-bg);border:1px solid color-mix(in srgb,var(--gold) 35%,transparent);line-height:1.6}
+.multi-legend .star{color:var(--gold);font-weight:700}
 .spacer{flex:1}
 .btn{border:1px solid var(--control-border);background:var(--surface);color:var(--text);padding:7px 14px;border-radius:8px;cursor:pointer;font-weight:500;font-size:.88rem;line-height:1.5}
 .btn:hover{background:var(--primary-soft);border-color:var(--primary);color:var(--accent-text)}
@@ -419,6 +421,7 @@ legend{padding:0 6px;font-weight:600;font-size:.86rem}
       <div class="card">
         <h3><span class="std snomed">SNOMED CT</span> is-a 관계</h3>
         <p class="small muted">내장 데이터 범위(직접 부모 + 최상위 계층) 내 시각화입니다. 주황색 선은 다중 부모를 뜻합니다.</p>
+        <p class="multi-legend small" id="multiLegend"></p>
         <div class="row" id="multiChips" style="margin:8px 0"></div>
         <div class="svg-wrap" id="snomedSvg"></div>
         <div class="compare-box" id="hierCompare"></div>
@@ -994,7 +997,7 @@ function renderSnomedSvg(){
   if (!pNodes.length) edges += `<path class="edge dashed" d="M${W/2},${cN.top} L${W/2},${rootN.bottom}"/>`;
   edges += `<text class="e-label" x="${W/2 + 118}" y="${rootN.bottom + 18}">⋯ 중간 계층 생략</text>`;
   body = edges + body + pNodes.map(p=>p.svg).join('') + cN.svg;
-  if (multi) body += `<text class="banner" x="${W-12}" y="${H0-10}" text-anchor="end">★ 다중 부모 ${parents.length}개 (polyhierarchy)</text>`;
+  if (multi) body += `<text class="banner" x="${W-12}" y="${H0-10}" text-anchor="end">★${parents.length} 다중 부모: 부모 ${parents.length}개 (polyhierarchy)</text>`;
   const label = `${c.concept_ko}의 SNOMED CT 계층: 부모 ${parents.map(p=>p.term).join(', ') || '없음'}; 최상위 ${root.term}`;
   $('#snomedSvg').innerHTML = `<svg viewBox="0 0 ${W} ${H0}" role="img" aria-label="${esc(label)}">
     <defs><marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path class="arrow" d="M0,0 L10,5 L0,10 z"/></marker>
@@ -1010,12 +1013,17 @@ function renderSnomedSvg(){
   $$('#icdTree .leaf').forEach(b => b.setAttribute('aria-pressed', b.dataset.id === H.sel));
 }
 function renderHierarchy(){
-  $('#hierSelect').innerHTML = DATA.map(c => `<option value="${esc(c.id)}">${esc(c.concept_ko)} (${esc(c.snomed.id||'—')})${c.snomed.parents.length>1?' ★':''}</option>`).join('');
-  const two = DATA.filter(c => c.snomed.parents.length === 2).length;
-  $('#multiChips').innerHTML = '<span class="small muted">대표 다중 부모(3개 이상):</span> ' + DATA.filter(c => c.snomed.parents.length >= 3)
-    .sort((a,b) => b.snomed.parents.length - a.snomed.parents.length)
-    .map(c => `<button type="button" class="chip" data-id="${esc(c.id)}" style="border-color:var(--gold)">★ ${esc(c.concept_ko)} (${c.snomed.parents.length})</button>`).join('')
-    + (two ? `<span class="small muted">· 부모 2개 개념 ${two}개는 위 선택 목록의 ★로 확인</span>` : '');
+  /* ★ 표기 규칙(드롭다운·버튼 공통): ★ = SNOMED CT is-a 부모가 2개 이상인 다중 부모 개념, 숫자 = 부모 수 */
+  const np = c => c.snomed.parents.length;
+  const star = c => np(c) > 1 ? ` ★${np(c)}` : '';
+  $('#hierSelect').innerHTML = DATA.map(c => `<option value="${esc(c.id)}">${esc(c.concept_ko)} (${esc(c.snomed.id||'—')})${star(c)}</option>`).join('');
+  const multi = DATA.filter(c => np(c) >= 2), two = multi.filter(c => np(c) === 2).length, big = multi.filter(c => np(c) >= 3);
+  $('#multiLegend').innerHTML = `<b><span class="star">★</span> = 다중 부모 개념</b>: SNOMED CT에서 is-a 부모가 <b>2개 이상</b>인 개념입니다. ★ 옆 숫자는 부모 수입니다(예: ★3 = 부모 3개).<br>`
+    + `<b>위 선택 목록</b>: 다중 부모 개념 <b>전체 ${multi.length}개</b>에 ★를 표시합니다(부모 2개 ${two}개 + 3개 이상 ${big.length}개).<br>`
+    + `<b>아래 버튼</b>: 그중 부모가 <b>3개 이상</b>인 대표 개념 ${big.length}개만 모은 바로가기입니다.`;
+  $('#multiChips').innerHTML = '<span class="small muted">부모 3개 이상 바로가기:</span> ' + big
+    .sort((a,b) => np(b) - np(a) || a.concept_ko.localeCompare(b.concept_ko, 'ko'))
+    .map(c => `<button type="button" class="chip" data-id="${esc(c.id)}" style="border-color:var(--gold)" aria-label="${esc(c.concept_ko)}, 부모 ${np(c)}개">${esc(c.concept_ko)} ★${np(c)}</button>`).join('');
   renderIcdTree(); renderSnomedSvg();
 }
 renderers.hierarchy = renderHierarchy;
