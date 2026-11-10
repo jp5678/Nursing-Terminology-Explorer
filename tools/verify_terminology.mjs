@@ -8,6 +8,7 @@
    사용법 (Node.js 18 이상, 추가 패키지 불필요)
      node tools/verify_terminology.mjs
      node tools/verify_terminology.mjs --only kcd,icd10
+     node tools/verify_terminology.mjs --only order        (화면 목록 정렬만 검사, 인터넷 불필요)
      node tools/verify_terminology.mjs --icd11-release 2026-01
      node tools/verify_terminology.mjs --icd11-file ./SimpleTabulation-ICD-11-MMS-en.txt
      node tools/verify_terminology.mjs --snowstorm https://<Snowstorm 서버>/snowstorm/snomed-ct
@@ -19,6 +20,7 @@
      icd11  WHO ICD-11 MMS 릴리스 표(SimpleTabulation, ICD-11 Browser 의 Info 메뉴에서 제공)
      snomed SNOMED CT International (Snowstorm 서버, --snowstorm 로 주소 지정 시에만 실행)
      icnp   SNOMED CT의 ICNP 매핑 참조집합(진단 711112009 · 중재 712505008) (위와 같은 Snowstorm 서버 필요)
+     order  (원본 대조 아님) 계층 탐색 드롭다운이 한글 개념명 가나다순인지 검사. 인터넷 불필요
 
    주의
      - 사이트 구조가 바뀌면 대조가 실패할 수 있습니다. 그 경우 "조회 실패"로 보고하며
@@ -34,6 +36,7 @@
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
+import vm from 'node:vm';
 import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 
@@ -41,7 +44,7 @@ const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const args = process.argv.slice(2);
 const opt = (name, def) => { const i = args.indexOf('--' + name); return i >= 0 ? args[i + 1] : def; };
 const FILE = path.resolve(opt('file', path.join(ROOT, 'index.html')));
-const ONLY = (opt('only', 'kcd,icd10,icd11,snomed,icnp')).split(',').map(s => s.trim());
+const ONLY = (opt('only', 'order,kcd,icd10,icd11,snomed,icnp')).split(',').map(s => s.trim());
 const ICD11_RELEASE = opt('icd11-release', '2026-01');
 const ICD11_FILE = opt('icd11-file', '');
 const SNOWSTORM = (opt('snowstorm', process.env.SNOWSTORM_URL || '')).replace(/\/$/, '');
@@ -200,8 +203,27 @@ async function verifyIcnp(data) {
   } catch (e) { add('icnp', null, '', 'error', '조회 실패: ' + e.message); }
 }
 
+/* ---------------- 화면 목록 정렬 (인터넷 불필요) ---------------- */
+// 계층 탐색 드롭다운(#hierSelect)을 만드는 실제 코드 한 줄을 파일에서 꺼내 실행하고,
+// 나온 항목이 한글 개념명(concept_ko) 가나다순인지 확인합니다. 데이터가 늘어도 순서가 유지되는지 봅니다.
+async function verifyOrder(data) {
+  const html = fs.readFileSync(FILE, 'utf8');
+  const m = html.match(/\$\('#hierSelect'\)\.innerHTML = ([^\n]+);\n/);
+  if (!m) { add('order', null, '', 'error', '계층 탐색 드롭다운(#hierSelect)을 만드는 코드를 찾지 못함'); return; }
+  let out;
+  try { out = vm.runInNewContext(m[1], { DATA: data, esc: s => String(s ?? ''), star: () => '' }); }
+  catch (e) { add('order', null, '', 'error', '드롭다운 코드를 실행하지 못함: ' + e.message); return; }
+  const byId = Object.fromEntries(data.map(c => [c.id, c.concept_ko]));
+  const names = [...String(out).matchAll(/<option value="([^"]*)"/g)].map(x => byId[x[1]] ?? x[1]);
+  const coll = new Intl.Collator('ko');
+  const k = names.findIndex((n, i) => i > 0 && coll.compare(names[i - 1], n) > 0);
+  if (names.length !== data.length) add('order', null, '', 'diff', `계층 탐색 드롭다운 항목 수: 화면 ${names.length}개 / 데이터 ${data.length}개`);
+  else if (k > 0) add('order', null, '', 'diff', `계층 탐색 드롭다운이 가나다순이 아님: “${names[k - 1]}” 다음에 “${names[k]}”`);
+  else add('order', null, '', 'ok', '');
+}
+
 /* ---------------- main ---------------- */
-const STEPS = { kcd: ['KCD-9', verifyKcd], icd10: ['ICD-10', verifyIcd10], icd11: ['ICD-11', verifyIcd11], snomed: ['SNOMED CT', verifySnomed], icnp: ['ICNP', verifyIcnp] };
+const STEPS = { order: ['화면 목록 정렬', verifyOrder], kcd: ['KCD-9', verifyKcd], icd10: ['ICD-10', verifyIcd10], icd11: ['ICD-11', verifyIcd11], snomed: ['SNOMED CT', verifySnomed], icnp: ['ICNP', verifyIcnp] };
 const data = loadData();
 console.log(`대상 파일: ${path.relative(process.cwd(), FILE)} · 개념 ${data.length}개 · ${new Date().toISOString().slice(0, 10)}`);
 for (const key of Object.keys(STEPS)) {
@@ -212,7 +234,7 @@ for (const key of Object.keys(STEPS)) {
   const rs = results.filter(r => r.std === key);
   const n = s => rs.filter(r => r.status === s).length;
   console.log(`  일치 ${n('ok')} · 불일치 ${n('diff')} · 조회 실패 ${n('error')}${n('skip') ? ' · 건너뜀' : ''}`);
-  for (const r of rs.filter(r => r.status !== 'ok')) console.log(`  - ${[r.id, r.concept, r.code].filter(Boolean).join(' ')}: ${r.detail}`);
+  for (const r of rs.filter(r => r.status !== 'ok')) { const who = [r.id, r.concept, r.code].filter(Boolean).join(' '); console.log(`  - ${who ? who + ': ' : ''}${r.detail}`); }
 }
 if (JSON_OUT) { fs.writeFileSync(JSON_OUT, JSON.stringify({ file: FILE, date: new Date().toISOString(), icd11Release: ICD11_RELEASE, results }, null, 1)); console.log(`\n보고서 저장: ${JSON_OUT}`); }
 const bad = results.filter(r => r.status === 'diff' || r.status === 'error').length;
