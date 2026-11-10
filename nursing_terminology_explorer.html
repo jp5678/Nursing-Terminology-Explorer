@@ -1504,7 +1504,8 @@ function renderMismatch(){
   const fbox = $('#mmFilters'), lbox = $('#mmList'); if (!fbox || !lbox) return;
   fbox.innerHTML = [['all','전체']].concat(Object.keys(MM_TYPES).map(k => [k, MM_TYPES[k].label]))
     .map(([k,l]) => `<button type="button" class="chip" data-mm="${k}" aria-pressed="${MM.type===k}">${esc(l)}</button>`).join('');
-  const list = MISMATCH.filter(m => MM.type === 'all' || m.t === MM.type);
+  const mmName = m => (getConcept(m.cid) || {}).concept_ko || m.cid;
+  const list = MISMATCH.filter(m => MM.type === 'all' || m.t === MM.type).sort((a,b) => mmName(a).localeCompare(mmName(b), 'ko'));
   lbox.innerHTML = list.map(m => { const c = getConcept(m.cid);
     return `<article class="v-task" style="border-left-color:var(--primary)">
       <div class="row"><b>${esc(c ? c.concept_ko : m.cid)}</b><span class="type-badge">${esc(MM_TYPES[m.t].label)}</span></div>
