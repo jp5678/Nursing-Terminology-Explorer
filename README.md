@@ -26,7 +26,7 @@ package.json                  점검 도구용 설정 (앱 실행과는 무관)
 |---|---|
 | `<style>` | 디자인 토큰(색·서체), 라이트·다크 테마, 화면별 스타일 |
 | `<body>` | 상단 바, 메뉴(탭), 탭별 화면 틀, 푸터·고지문 |
-| 첫째 `<script>` | `TERMINOLOGY_DATA` — 개념 40개의 5개 표준 코드 |
+| 첫째 `<script>` | `TERMINOLOGY_DATA` — 개념 50개의 5개 표준 코드 |
 | 둘째 `<script>` | 동작 코드. 주석 제목 순서: Utilities → Data layer → Progress → Modal → Theme → Tabs → 탭 1~7 → init |
 
 ### 화면(탭)
