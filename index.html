@@ -482,7 +482,7 @@ legend{padding:0 6px;font-weight:600;font-size:.86rem}
           <div class="sys-card icd11"><span class="std icd11">ICD-11</span>
             <span class="full">국제질병분류 제11차 개정판</span>
             <dl><dt>관리</dt><dd>세계보건기구(WHO). 2022.1.1 발효</dd>
-            <dt>구조</dt><dd><b>Foundation</b>(다중 부모 의미망) + <b>MMS</b>(통계용 선형화) 이원 구조. 스템코드에 확장코드를 <code>&amp;</code>·<code>/</code>로 잇는 <b>후조합(클러스터 코딩)</b></dd>
+            <dt>구조</dt><dd><b>Foundation</b>(다중 부모 허용) + <b>MMS</b>(부모가 하나인 상호배타적 통계용 목록) 이원 구조. <b>후조합(클러스터 코딩)</b>: 스템코드끼리는 <code>/</code>, 스템코드와 확장코드는 <code>&amp;</code>로 연결 (예: <code>BA41.0&amp;XA7RE3</code> 급성 ST분절상승 심근경색 + 심장 전벽)</dd>
             <dt>용도</dt><dd>통계와 임상 기록 지원. 웹 API·코딩 도구로 시스템에 직접 연동. 국내 2031년경 이행 예정(변경 가능)</dd>
             <dt>코드 예</dt><dd><code>5A11</code> Type 2 diabetes mellitus</dd></dl>
             <p class="rn">💾 정보학 포인트: 분류와 용어의 경계를 좁힌 “디지털 우선” 분류. KCD와 코드 체계가 완전히 달라 EMR 전환 시 대규모 매핑 필요</p></div>
@@ -494,14 +494,14 @@ legend{padding:0 6px;font-weight:600;font-size:.86rem}
             <span class="full">Systematized Nomenclature of Medicine – Clinical Terms</span>
             <dl><dt>관리</dt><dd>SNOMED International (한국 2020년 회원국 가입, 한국어 확장 배포)</dd>
             <dt>구조</dt><dd>개념(ID)–설명(FSN·동의어)–관계. <b>기술논리</b> 기반 정의와 is-a <b>다중 부모</b>. 19개 최상위 계층(소견·절차·신체구조·물질 등)</dd>
-            <dt>용도</dt><dd>EHR 임상 기록, FHIR 코딩, CDS 규칙, ECL 질의로 환자군 추출. ICD-10 매핑 제공</dd>
+            <dt>용도</dt><dd>EHR 임상 기록, FHIR 코딩, CDS 규칙, ECL 질의로 환자군 추출. ICD-10 확장 맵(참조집합 <code>447562003</code>) 제공</dd>
             <dt>코드 예</dt><dd><code>44054006</code> Diabetes mellitus type 2</dd></dl>
             <p class="rn">💾 정보학 포인트: “당뇨병의 모든 하위 개념”을 계층 추론으로 한 번에 질의 가능 → 데이터 추출·AI 학습 레이블링의 기반</p></div>
           <div class="sys-card icnp"><span class="std icnp">ICNP</span>
             <span class="full">국제간호실무분류 (International Classification for Nursing Practice)</span>
-            <dl><dt>관리</dt><dd>국제간호협의회(ICN)</dd>
-            <dt>구조</dt><dd>7축 모형(초점·판단·수단·행위·시간·위치·대상자)으로 원자 개념을 조합한 <b>사전조합</b> 간호진단·결과·중재 진술. SNOMED CT와의 매핑 참조집합 제공</dd>
-            <dt>용도</dt><dd>간호과정 기록의 표준화, 간호 카탈로그(하위 집합) 구성</dd>
+            <dl><dt>관리</dt><dd>국제간호협의회(ICN). ICN–SNOMED International 협약으로 <b>SNOMED CT에 통합</b>되어 SNOMED CT 코드로 관리 (단독 배포는 2019 릴리스까지)</dd>
+            <dt>구조</dt><dd>ISO 18104에 맞춘 <b>사전조합</b> 간호진단·중재 진술이 실무의 중심. 개념을 7개 축(초점·판단·행위·수단·위치·대상자·시간)에 배정하던 후조합용 <b>7축 모형은 레거시</b>로 폐기 예정</dd>
+            <dt>용도</dt><dd>간호진단·결과·중재의 표준 표현, 간호 카탈로그(하위 집합) 구성. 과거 ICNP 코드는 SNOMED CT 동등성 맵(진단 <code>711112009</code>·중재 <code>712505008</code>)으로 연결</dd>
             <dt>표현 예</dt><dd>질병명 대신 “급성 통증”, “낙상 위험” 같은 <b>간호 현상</b>을 다룸</dd></dl>
             <p class="rn">💾 정보학 포인트: 질병 중심 데이터에 가려진 <b>간호의 판단과 중재</b>를 측정 가능하게 만들어 간호 기여를 가시화</p></div>
         </div>
@@ -1549,7 +1549,7 @@ function renderOverview(){
     ['ICD-10','icd10','분류체계','세계보건기구(WHO)','국제 질병·사망 통계 비교','22개 장, 영문자+숫자 3~4자리 상호배타적 범주','KCD의 모체(국내는 KCD를 통해 사용)'],
     ['ICD-11','icd11','분류체계 (디지털 기반)','세계보건기구(WHO)','통계 + 임상 기록 지원 강화','파운데이션 구조, 스템코드 + 확장코드 조합(후조합)','2022.1.1 WHO 발효. 국내는 2031년경 이행 예정(계획 변경 가능)'],
     ['SNOMED CT','snomed','임상용어체계','SNOMED International','EHR 임상 표현, 상호운용성, 임상의사결정지원','개념–설명–관계 모델, is-a 다중 부모, 질환·소견·절차·사건 등 19개 최상위 계층','2020년 회원국 가입. 국가 배포 및 한국어 확장(Korean Extension) 구축'],
-    ['ICNP','icnp','간호용어체계','국제간호협의회(ICN)','간호진단·결과·중재의 표준 표현, 간호 기여 가시화','7축 모형(초점·판단·수단·행위·시간·위치·대상자) 기반 사전조합 개념','간호기록 표준화 연구·교육에 활용']
+    ['ICNP','icnp','간호용어체계','국제간호협의회(ICN)','간호진단·결과·중재의 표준 표현, 간호 기여 가시화','ISO 18104 준거 사전조합 진단·중재 진술. 후조합용 7축 모형(초점·판단·행위·수단·위치·대상자·시간)은 SNOMED CT 통합 후 레거시로 폐기 예정','간호기록 표준화 연구·교육에 활용. 한국은 SNOMED International 회원국이므로 SNOMED CT에 통합된 ICNP 내용을 추가 비용 없이 이용 가능']
   ];
   $('#overviewBox').innerHTML = `
   <div class="card"><h3>분류체계 vs 임상용어체계</h3>
@@ -1578,10 +1578,10 @@ function renderOverview(){
   </ul></div>
   <div class="card"><h3>공식 원본·참고 자료</h3><ul class="small">
     <li>국가데이터처 (구 통계청): <a href="https://www.mods.go.kr" target="_blank" rel="noopener">mods.go.kr</a> · 통계분류포털 (KCD): <a href="https://kssc.kostat.go.kr" target="_blank" rel="noopener">kssc.kostat.go.kr</a> · KCD-9 조회: <a href="https://www.koicd.kr/kcd/kcd9.do" target="_blank" rel="noopener">koicd.kr</a></li>
-    <li>WHO ICD-10 Browser (2019판): <a href="https://icd.who.int/browse10/2019/en" target="_blank" rel="noopener">icd.who.int/browse10</a> · WHO ICD-11 Browser: <a href="https://icd.who.int/browse/2026-01/mms/en" target="_blank" rel="noopener">icd.who.int/browse</a></li>
+    <li>WHO ICD-10 Browser (2019판): <a href="https://icd.who.int/browse10/2019/en" target="_blank" rel="noopener">icd.who.int/browse10</a> · WHO ICD-11 Browser: <a href="https://icd.who.int/browse/2026-01/mms/en" target="_blank" rel="noopener">icd.who.int/browse</a> · ICD-11 Reference Guide (후조합·클러스터 코딩 규칙): <a href="https://icdcdn.who.int/icd11referenceguide/en/html/index.html" target="_blank" rel="noopener">icdcdn.who.int</a></li>
     <li>SNOMED International: <a href="https://www.snomed.org" target="_blank" rel="noopener">snomed.org</a> · SNOMED CT Browser: <a href="https://snomedbrowser.org/" target="_blank" rel="noopener">snomedbrowser.org</a></li>
     <li>한국보건의료정보원 (국내 SNOMED CT 관련 업무): <a href="https://www.k-his.or.kr" target="_blank" rel="noopener">k-his.or.kr</a></li>
-    <li>ICNP (SNOMED CT의 ICNP 매핑 참조집합): <a href="https://snomedbrowser.org/?perspective=full&conceptId1=711112009&edition=MAIN/2026-11-01&release=&languages=en" target="_blank" rel="noopener">진단 711112009</a> · <a href="https://snomedbrowser.org/?perspective=full&conceptId1=712505008&edition=MAIN/2026-11-01&release=&languages=en" target="_blank" rel="noopener">중재 712505008</a> · 국제간호협의회 ICN: <a href="https://www.icn.ch/icnp-browser" target="_blank" rel="noopener">ICNP Browser (2019 릴리스까지의 레거시)</a></li>
+    <li>ICNP (SNOMED CT의 ICNP 매핑 참조집합): <a href="https://snomedbrowser.org/?perspective=full&conceptId1=711112009&edition=MAIN/2026-11-01&release=&languages=en" target="_blank" rel="noopener">진단 711112009</a> · <a href="https://snomedbrowser.org/?perspective=full&conceptId1=712505008&edition=MAIN/2026-11-01&release=&languages=en" target="_blank" rel="noopener">중재 712505008</a> · 국제간호협의회 ICN: <a href="https://www.icn.ch/icnp-browser" target="_blank" rel="noopener">ICNP Browser (2019 릴리스까지의 레거시)</a> · <a href="https://www.icn.ch/sites/default/files/inline-files/ICNP_Q%26A_October%202020.pdf" target="_blank" rel="noopener">ICN Q&amp;A: SNOMED CT 통합·7축 모형 폐기 (2020)</a></li>
   </ul><p class="small muted">이 앱의 코드는 학습용 선별 자료입니다. KCD-9·ICD-10·ICD-11·SNOMED CT는 2026-11-10 공식 원본 대조본입니다. ICNP는 SNOMED CT 개념과 동일한 9개만 검증 완료이고, 나머지는 연관 개념 선택에 교수자 확인이 필요해 “⚠ 검증 필요” 상태입니다.</p></div>`;
 }
 const MM_TYPES = {
