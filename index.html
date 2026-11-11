@@ -1659,7 +1659,11 @@ function vAppValue(c, type){
   if (type === 'icnp_name') return c.icnp.name || c.icnp.suggested_name || '';
   return getPath(c, V_TYPES[type].field) || '';
 }
-let vState = Object.assign({ student:'', results:{}, assigned:null }, Store.get(KEYS.verify, {}) || {});
+let vState = Object.assign({ cls:'', sid:'', name:'', results:{}, assigned:null }, Store.get(KEYS.verify, {}) || {});
+if (typeof vState.student === 'string'){ if (vState.student && !vState.name) vState.name = vState.student; delete vState.student; }   // 이전 버전의 단일 '제출자' 값 → 이름
+['cls','sid','name'].forEach(k => { vState[k] = String(vState[k] ?? ''); });
+const V_WHO = [['cls','반','vCls'], ['sid','학번','vSid'], ['name','이름','vName']];
+const vWhoText = () => V_WHO.map(([k]) => vState[k]).filter(Boolean).join(' ');   // 예: "A반 20261234 홍길동"
 if (!vState.results || typeof vState.results !== 'object') vState.results = {};
 if (vState.assigned && !Array.isArray(vState.assigned)) vState.assigned = null;
 const VF = { type:'all', status:'all' };
@@ -1706,13 +1710,15 @@ function renderVerify(){
     <div class="v-guide">
       <div><b>① 과제 고르기</b><ol><li>“무작위 5개 배정”으로 과제를 받거나 전체 목록에서 고릅니다.</li><li>앱 제안값을 먼저 읽습니다.</li></ol></div>
       <div><b>② 공식 원본과 대조</b><ol><li>각 카드의 “확인 방법 · 공식 원본”을 펼쳐 원본을 엽니다.</li><li>일치·불일치·찾지 못함 중 하나로 판정합니다.</li><li>불일치면 원본의 올바른 값을 그대로 적습니다.</li></ol></div>
-      <div><b>③ 근거 남기고 제출</b><ol><li>근거 칸에 출처·화면·버전을 적습니다.</li><li>JSON 또는 CSV로 내보내 교수자에게 제출합니다.</li></ol></div>
+      <div><b>③ 근거 남기고 제출</b><ol><li>근거 칸에 출처·화면·버전을 적습니다.</li><li>JSON·CSV·문서(.docx) 중 교수자가 지정한 형식으로 내보내 제출합니다.</li><li>문서 파일은 Google 드라이브에 올리면 Google 문서로 열립니다.</li></ol></div>
     </div>
     <p class="insight small">⚖️ <b>원칙</b>: 블로그·요약 자료·AI 답변이 아니라 <b>관리기관의 공식 원본</b>에서 확인합니다. 찾지 못했다면 추측하지 말고 “찾지 못함”으로 남기세요. 그것도 정직한 검증 결과입니다.</p>
   </div>
   <div class="card">
+    <fieldset style="margin-top:0"><legend>제출자</legend><div class="form-grid">
+      ${V_WHO.map(([k, label, id]) => `<div><label for="${id}">${label}</label><input id="${id}" type="text" data-who="${k}" value="${esc(vState[k])}" autocomplete="off"${k==='sid'?' inputmode="numeric"':''}></div>`).join('')}
+    </div></fieldset>
     <div class="form-grid">
-      <div><label for="vStudent">제출자 (학번 또는 이름, 선택)</label><input id="vStudent" type="text" value="${esc(vState.student)}" autocomplete="off"></div>
       <div><label for="vType">과제 유형</label><select id="vType"><option value="all">전체</option>${Object.keys(V_TYPES).map(k=>`<option value="${k}" ${VF.type===k?'selected':''}>${esc(V_TYPES[k].label)}</option>`).join('')}</select></div>
       <div><label for="vStatus">진행 상태</label><select id="vStatus"><option value="all">전체</option><option value="todo" ${VF.status==='todo'?'selected':''}>미완료</option><option value="done" ${VF.status==='done'?'selected':''}>완료</option></select></div>
     </div>
@@ -1722,6 +1728,7 @@ function renderVerify(){
       <span class="spacer"></span>
       <button type="button" class="btn" id="vExportJson">⬇ JSON 제출 파일</button>
       <button type="button" class="btn" id="vExportCsv">⬇ CSV (엑셀)</button>
+      <button type="button" class="btn" id="vExportDocx" title="Google 드라이브에 올리면 Google 문서로 열립니다. Word·한글에서도 열립니다.">⬇ 문서 (Google 문서·Word)</button>
       <button type="button" class="btn sm danger" id="vClear">기록 초기화</button>
     </div>
     <div class="v-summary" aria-live="polite">${vSummaryHTML()}</div>
@@ -1742,13 +1749,63 @@ function vRows(){
 }
 function downloadText(filename, text, mime){
   try {
-    const blob = new Blob([text], { type:mime });
+    const blob = text instanceof Blob ? text : new Blob([text], { type:mime });
     const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = filename;
     document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 500);
     return true;
   } catch(err){ toast('파일 저장에 실패했습니다: ' + err.message); return false; }
 }
-function vFileBase(){ const who = (vState.student||'student').replace(/[^\w가-힣-]/g,'_').slice(0,30); return `verification_${who}_${localDate()}`; }
+/* ---------- 문서(.docx) 내보내기: Google 문서·Word·한글에서 열립니다 ----------
+   .docx 는 XML 파일을 ZIP으로 묶은 형식입니다. 외부 라이브러리 없이 무압축 ZIP을 직접 만듭니다. */
+const CRC_TABLE = (() => { const t = new Uint32Array(256); for (let n = 0; n < 256; n++){ let c = n; for (let k = 0; k < 8; k++) c = c & 1 ? 0xEDB88320 ^ (c >>> 1) : c >>> 1; t[n] = c >>> 0; } return t; })();
+const crc32 = u8 => { let c = 0xFFFFFFFF; for (let i = 0; i < u8.length; i++) c = CRC_TABLE[(c ^ u8[i]) & 0xFF] ^ (c >>> 8); return (c ^ 0xFFFFFFFF) >>> 0; };
+function zipStore(files, mime){   // files: [{ name, text }]
+  const enc = new TextEncoder(), parts = [], central = []; let off = 0;
+  const u16 = n => [n & 255, (n >>> 8) & 255], u32 = n => [n & 255, (n >>> 8) & 255, (n >>> 16) & 255, (n >>> 24) & 255];
+  files.forEach(f => {
+    const name = enc.encode(f.name), data = enc.encode(f.text), crc = crc32(data);
+    const meta = [...u16(0x0800), ...u16(0), ...u16(0), ...u16(0x21), ...u32(crc), ...u32(data.length), ...u32(data.length), ...u16(name.length), ...u16(0)];   // UTF-8 이름, 무압축
+    const local = new Uint8Array([0x50, 0x4B, 3, 4, ...u16(20), ...meta]);
+    parts.push(local, name, data);
+    central.push(new Uint8Array([0x50, 0x4B, 1, 2, ...u16(20), ...u16(20), ...meta, ...u16(0), ...u16(0), ...u16(0), ...u32(0), ...u32(off)]), name);
+    off += local.length + name.length + data.length;
+  });
+  const csize = central.reduce((n, a) => n + a.length, 0);
+  const end = new Uint8Array([0x50, 0x4B, 5, 6, ...u16(0), ...u16(0), ...u16(files.length), ...u16(files.length), ...u32(csize), ...u32(off), ...u16(0)]);
+  return new Blob([...parts, ...central, end], { type:mime });
+}
+const xmlEsc = v => String(v ?? '').replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F]/g, '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+function vDocxBlob(rows){
+  const run = (t, o = {}) => `<w:r><w:rPr>${o.b ? '<w:b/>' : ''}${o.color ? `<w:color w:val="${o.color}"/>` : ''}<w:sz w:val="${o.sz || 20}"/><w:szCs w:val="${o.sz || 20}"/></w:rPr><w:t xml:space="preserve">${xmlEsc(t)}</w:t></w:r>`;
+  const para = (t, o = {}) => `<w:p><w:pPr><w:spacing w:after="${o.after ?? 80}"/></w:pPr>${run(t, o)}</w:p>`;
+  const cell = (t, w, o = {}) => `<w:tc><w:tcPr><w:tcW w:w="${w}" w:type="dxa"/>${o.fill ? `<w:shd w:val="clear" w:color="auto" w:fill="${o.fill}"/>` : ''}</w:tcPr>${para(t, Object.assign({ sz:18, after:0 }, o))}</w:tc>`;
+  const cols = [['개념', 1700], ['항목', 1500], ['KCD 코드', 1000], ['앱 수록값', 2900], ['판정', 1100], ['올바른 값', 2600], ['근거', 2400], ['메모', 1500]];
+  const border = ['top','left','bottom','right','insideH','insideV'].map(k => `<w:${k} w:val="single" w:sz="4" w:space="0" w:color="999999"/>`).join('');
+  const stColor = { match:'0F7A4F', mismatch:'B42318', notfound:'B45309' };
+  const cnt = st => rows.filter(r => r.status === st).length;
+  const body = [
+    para('검증 미션 결과 보고서', { b:true, sz:32, after:60 }),
+    para('간호 표준용어 탐색기 · 앱 수록값을 공식 원본과 대조한 결과', { sz:18, color:'555555', after:200 }),
+    para(`제출자: ${vState.cls} · ${vState.sid} · ${vState.name}`, { b:true, sz:22 }),
+    para(`제출일: ${localStamp()}`, { sz:20 }),
+    para(`판정 ${rows.length}건 — 일치 ${cnt('match')} · 불일치 ${cnt('mismatch')} · 찾지 못함 ${cnt('notfound')}`, { sz:20, after:200 }),
+    `<w:tbl><w:tblPr><w:tblW w:w="${cols.reduce((n, c) => n + c[1], 0)}" w:type="dxa"/><w:tblBorders>${border}</w:tblBorders><w:tblLayout w:type="fixed"/><w:tblCellMar><w:left w:w="80" w:type="dxa"/><w:right w:w="80" w:type="dxa"/></w:tblCellMar></w:tblPr>
+      <w:tblGrid>${cols.map(c => `<w:gridCol w:w="${c[1]}"/>`).join('')}</w:tblGrid>
+      <w:tr><w:trPr><w:tblHeader/></w:trPr>${cols.map(c => cell(c[0], c[1], { b:true, fill:'EAF0FB' })).join('')}</w:tr>
+      ${rows.map(r => `<w:tr>${[r.concept_ko, r.item, r.kcd_code, r.app_value, V_STATUS[r.status], r.value, r.source, r.note].map((v, i) => cell(v, cols[i][1], i === 4 ? { b:true, color:stColor[r.status] } : {})).join('')}</w:tr>`).join('')}
+    </w:tbl>`,
+    para('', { after:120 }),
+    para('※ 교육용 학습 자료입니다. 판정은 제출자가 관리기관의 공식 원본에서 직접 확인한 결과입니다.', { sz:16, color:'555555' })
+  ].join('');
+  const doc = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:body>${body}<w:sectPr><w:pgSz w:w="16838" w:h="11906" w:orient="landscape"/><w:pgMar w:top="1000" w:right="1000" w:bottom="1000" w:left="1000" w:header="600" w:footer="600" w:gutter="0"/></w:sectPr></w:body></w:document>`;
+  return zipStore([
+    { name:'[Content_Types].xml', text:'<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/></Types>' },
+    { name:'_rels/.rels', text:'<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/></Relationships>' },
+    { name:'word/document.xml', text:doc }
+  ], 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
+}
+function vFileBase(){ const who = (V_WHO.map(([k]) => vState[k]).filter(Boolean).join('_')||'student').replace(/[^\w가-힣-]/g,'_').slice(0,40); return `verification_${who}_${localDate()}`; }
 $('#verifyBox').addEventListener('click', e => {
   const b = e.target.closest('button'); if (!b) return;
   if (b.dataset.vst){
@@ -1769,26 +1826,30 @@ $('#verifyBox').addEventListener('click', e => {
     vState.assigned = shuffle(todo.length >= 5 ? todo : pool).slice(0,5).map(t => t.id); saveV(); renderVerify(); toast('과제 5개를 배정했습니다'); return;
   }
   if (b.id === 'vAll'){ vState.assigned = null; saveV(); renderVerify(); return; }
-  if (b.id === 'vClear'){ if (!window.confirm('검증 미션 기록을 모두 지울까요?')) return; vState = { student:vState.student, results:{}, assigned:null }; saveV(); renderVerify(); return; }
-  if (b.id === 'vExportJson' || b.id === 'vExportCsv'){
+  if (b.id === 'vClear'){ if (!window.confirm('검증 미션 기록을 모두 지울까요?')) return; vState = { cls:vState.cls, sid:vState.sid, name:vState.name, results:{}, assigned:null }; saveV(); renderVerify(); return; }
+  if (b.id === 'vExportJson' || b.id === 'vExportCsv' || b.id === 'vExportDocx'){
     const rows = vRows();
     if (!rows.length){ toast('판정한 과제가 없습니다'); return; }
+    const blank = V_WHO.find(([k]) => !vState[k]);
+    if (blank){ toast(`제출자의 ‘${blank[1]}’ 칸을 입력하세요`); const el = $('#'+blank[2]); if (el) el.focus(); return; }
     const miss = rows.filter(r => r.status === 'mismatch' && !r.value.trim()).length;
     if (miss && !window.confirm(`불일치인데 올바른 값이 비어 있는 과제가 ${miss}개 있습니다. 그래도 내보낼까요?`)) return;
     if (b.id === 'vExportJson'){
-      const payload = { type:'nte-verification', schema:1, app:'Nursing Terminology Explorer', student:vState.student, exported_at:new Date().toISOString(), results:rows };
+      const payload = { type:'nte-verification', schema:1, app:'Nursing Terminology Explorer', student:vWhoText(), class:vState.cls, student_id:vState.sid, name:vState.name, exported_at:new Date().toISOString(), results:rows };
       if (downloadText(vFileBase()+'.json', JSON.stringify(payload, null, 2), 'application/json')) toast('제출용 JSON을 저장했습니다');
+    } else if (b.id === 'vExportDocx'){
+      if (downloadText(vFileBase()+'.docx', vDocxBlob(rows))) toast('문서 파일을 저장했습니다. Google 드라이브에 올리면 Google 문서로 열립니다');
     } else {
-      const head = ['task_id','concept_id','개념','항목','KCD코드','앱 제안값','판정','올바른 값','근거','메모','수정시각'];
+      const head = ['반','학번','이름','task_id','concept_id','개념','항목','KCD코드','앱 제안값','판정','올바른 값','근거','메모','수정시각'];
       const q = v => `"${String(v).replace(/"/g,'""')}"`;
-      const lines = [head.map(q).join(',')].concat(rows.map(r => [r.task_id,r.concept_id,r.concept_ko,r.item,r.kcd_code,r.app_value,V_STATUS[r.status],r.value,r.source,r.note,r.updated].map(q).join(',')));
+      const lines = [head.map(q).join(',')].concat(rows.map(r => [vState.cls,vState.sid,vState.name,r.task_id,r.concept_id,r.concept_ko,r.item,r.kcd_code,r.app_value,V_STATUS[r.status],r.value,r.source,r.note,r.updated].map(q).join(',')));
       if (downloadText(vFileBase()+'.csv', '﻿' + lines.join('\r\n'), 'text/csv;charset=utf-8')) toast('CSV를 저장했습니다');
     }
   }
 });
 $('#verifyBox').addEventListener('change', e => {
   const el = e.target;
-  if (el.id === 'vStudent'){ vState.student = el.value.trim(); saveV(); return; }
+  if (el.dataset.who){ vState[el.dataset.who] = el.value.trim(); saveV(); return; }
   if (el.id === 'vType'){ VF.type = el.value; renderVerify(); return; }
   if (el.id === 'vStatus'){ VF.status = el.value; renderVerify(); return; }
   if (el.dataset.vf){
