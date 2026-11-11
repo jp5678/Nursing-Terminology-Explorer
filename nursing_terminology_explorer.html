@@ -183,6 +183,35 @@ label{font-size:.88rem;color:var(--muted);display:block;margin-bottom:4px}
 [data-theme="dark"] .sys-intro .si-tag{color:#0B1220}
 .sys-intro .si-link{flex:none;font-size:.84rem;font-weight:700;color:var(--muted);white-space:nowrap}
 @media (max-width:900px){.sys-intro .si-link{display:none}}
+/* ---------- 플랫폼 개발 목적 · 5개 표준 소개 ---------- */
+.about-box{margin:0 0 16px;border-radius:var(--radius);background:var(--surface);border:1px solid var(--border);box-shadow:var(--shadow)}
+.about-box>summary{list-style:none;cursor:pointer;display:flex;align-items:center;gap:10px;padding:12px 16px;font-weight:700;font-size:1rem;border-radius:var(--radius)}
+.about-box>summary::-webkit-details-marker{display:none}
+.about-box>summary::after{content:'▸';margin-left:auto;color:var(--muted);transition:transform .2s}
+.about-box[open]>summary::after{transform:rotate(90deg)}
+.about-box>summary:hover{background:var(--surface-2)}
+.about-box>summary .muted{font-weight:500}
+.about-body{padding:4px 16px 16px;border-top:1px solid var(--border)}
+.about-body h3{margin-top:14px;font-size:1.02rem}
+.purpose{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:10px;margin-top:10px}
+.purpose>div{padding:12px 14px;border-radius:10px;background:var(--surface-2);font-size:.92rem;line-height:1.65}
+.purpose>div b.h{display:block;margin-bottom:4px;color:var(--accent-text)}
+.purpose ul{margin:4px 0 0;padding-left:1.15em} .purpose li{margin:2px 0}
+.about-body pre.fhir{margin:8px 0 4px;padding:10px 12px;border-radius:8px;background:var(--surface);border:1px solid var(--border);font-family:var(--f-mono);font-size:.78rem;line-height:1.5;white-space:pre-wrap;overflow-wrap:anywhere;max-width:100%}
+.purpose>div{min-width:0}
+.about-group{margin-top:14px;font-size:.9rem;font-weight:700;color:var(--muted)}
+.about-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px;margin-top:8px}
+.sys-card{position:relative;padding:14px 14px 12px;border-radius:10px;border:1px solid var(--border);background:var(--surface);font-size:.88rem;line-height:1.6;display:flex;flex-direction:column;gap:5px}
+.sys-card::before{content:'';position:absolute;left:0;right:0;top:0;height:3px;border-radius:10px 10px 0 0;background:var(--c)}
+.sys-card.kcd9{--c:var(--b-kcd)} .sys-card.icd10{--c:var(--b-icd10)} .sys-card.icd11{--c:var(--b-icd11)} .sys-card.snomed{--c:var(--b-snomed)} .sys-card.icnp{--c:var(--b-icnp)}
+.sys-card>.std{align-self:flex-start}
+.sys-card .full{font-weight:600;font-size:.92rem}
+.sys-card dl{margin:2px 0 0;display:grid;grid-template-columns:auto 1fr;gap:3px 8px}
+.sys-card dt{color:var(--muted);font-weight:600;white-space:nowrap} .sys-card dd{margin:0}
+.sys-card code{font-family:var(--f-mono);font-size:.85rem}
+.sys-card .rn{margin-top:auto;padding:7px 9px;border-radius:6px;background:var(--surface-2);font-size:.85rem}
+.about-foot{display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center;margin-top:12px}
+@media (max-width:560px){.about-body{padding:4px 12px 14px}.about-box>summary{padding:12px;flex-wrap:wrap;row-gap:2px}.about-box>summary .muted{order:3;flex-basis:100%}}
 .local-terms{display:flex;flex-wrap:wrap;gap:5px;margin-top:10px}
 .local-terms .chip{font-family:var(--f-mono);font-size:.84rem;background:var(--surface-2)}
 
@@ -407,6 +436,82 @@ legend{padding:0 6px;font-weight:600;font-size:.86rem}
       <span class="si-link" aria-hidden="true">↔ 매핑 ↔</span>
       <p class="si-item"><span class="si-tag term">임상용어체계</span> <b>SNOMED CT·ICNP</b> — 기록·교환을 위해 임상 개념을 <b>여러 관계로 세밀하게</b> 표현합니다.</p>
     </div>
+    <details class="about-box" id="aboutBox" open>
+      <summary>📘 왜 표준용어를 배우는가? <span class="muted small">플랫폼 개발 목적 · 5개 표준의 정보학적 구조</span></summary>
+      <div class="about-body">
+        <h3>🎯 플랫폼 개발 목적 — 간호 데이터의 의미적 상호운용성</h3>
+        <div class="purpose">
+          <div><b class="h">① 문제: 구문은 맞아도 의미가 다르다</b>
+            HL7 FHIR 같은 교환 표준으로 데이터 <b>형식(구문)</b>을 맞춰도, 병원마다 “DM”, “당뇨”, “혈당조절 불량”처럼 <b>로컬 용어</b>를 쓰면 수신 시스템은 같은 개념으로 인식하지 못합니다. 이것이 <b>의미적 상호운용성(semantic interoperability)</b>의 결여이며, 데이터 통합·임상의사결정지원(CDS)·AI 모델 학습의 오류로 이어집니다.</div>
+          <div><b class="h">② 해법: 기록은 용어로, 집계는 분류로</b>
+            <ul><li><b>기록 시점</b>: SNOMED CT·ICNP로 임상 의미를 세밀하게 코딩</li>
+            <li><b>집계 시점</b>: KCD·ICD로 <b>매핑</b>해 통계·청구에 재사용 (“한 번 기록, 여러 번 활용”)</li>
+            <li>매핑은 1:1뿐 아니라 1:N·N:1·대응 없음이 있어 <b>정보 손실</b>이 생길 수 있음</li></ul>
+            <pre class="fhir" aria-label="FHIR CodeableConcept 예시"><code>"code": { "coding": [
+  { "system": "http://snomed.info/sct", "code": "44054006" },
+  { "system": "http://hl7.org/fhir/sid/icd-10", "code": "E11" } ],
+  "text": "2형 당뇨병" }</code></pre>
+            <span class="small muted">FHIR <code>CodeableConcept</code>: 한 개념에 여러 표준 코드를 함께 담는 구조</span></div>
+          <div><b class="h">③ 간호정보학의 관점</b>
+            <ul><li>간호 사정·진단·중재가 표준 코드로 구조화되어야 <b>간호최소데이터셋(NMDS)</b>, 간호 질 지표, 인력·수가 산정의 근거가 됩니다.</li>
+            <li>낙상·욕창 예측 같은 <b>간호 AI 모델</b>의 성능은 학습 데이터의 코딩 품질에 좌우됩니다.</li>
+            <li>국내 환경: 2026년 KCD-9 시행, SNOMED CT 국가 도입·한국어 확장, ICD-11 이행 준비(2031년경 예정, 변경 가능).</li></ul></div>
+          <div><b class="h">④ 이 플랫폼의 학습 성과</b>
+            <ul><li>한 개념의 5개 표준 코드를 비교하고 <b>매핑 유형·정보 손실</b>을 설명한다</li>
+            <li>분류의 단일 계층과 용어의 <b>다중 부모(is-a) 계층</b>을 구분한다</li>
+            <li>비정형 간호기록을 <b>표준 개념으로 코딩</b>하고 근거를 제시한다</li>
+            <li>AI·앱이 제시한 코드를 <b>공식 원본과 대조해 검증</b>한다 (AI 환각 대비)</li></ul></div>
+        </div>
+
+        <p class="about-group">📦 분류체계 (Classification) — 상호배타·망라적 범주로 집계: “한 개념은 한 칸”</p>
+        <div class="about-grid">
+          <div class="sys-card kcd9"><span class="std kcd9">KCD-9</span>
+            <span class="full">한국표준질병·사인분류 제9차</span>
+            <dl><dt>관리</dt><dd>국가데이터처 (구 통계청). 2026년 시행</dd>
+            <dt>구조</dt><dd>ICD-10의 장·블록·범주 구조를 따르면서 국내 실정에 맞게 세분화한 하위 코드 추가</dd>
+            <dt>용도</dt><dd>진단 코딩, 건강보험 청구, 사망원인·질병 통계의 법정 표준</dd>
+            <dt>코드 예</dt><dd><code>E11</code> 2형 당뇨병</dd></dl>
+            <p class="rn">💾 정보학 포인트: 건강보험 청구 빅데이터 연구의 기준 코드. 개정판마다 코드가 바뀌므로 시계열 분석 시 <b>버전 관리·변환표</b>가 필요</p></div>
+          <div class="sys-card icd10"><span class="std icd10">ICD-10</span>
+            <span class="full">국제질병분류 제10차 개정판</span>
+            <dl><dt>관리</dt><dd>세계보건기구(WHO)</dd>
+            <dt>구조</dt><dd>영문자+숫자 3자리 범주, 소수점 이하 4자리 세분류. “기타”·“상세불명” <b>잔여 범주</b> 존재</dd>
+            <dt>용도</dt><dd>국가 간 질병·사망 통계 비교, 국제 연구의 코호트 정의. KCD의 모체</dd>
+            <dt>코드 예</dt><dd><code>E11</code> Type 2 diabetes mellitus</dd></dl>
+            <p class="rn">💾 정보학 포인트: 잔여 범주로 묶이는 순간 세부 임상 정보가 사라짐 → 분류만으로는 임상 기록을 대체할 수 없음</p></div>
+          <div class="sys-card icd11"><span class="std icd11">ICD-11</span>
+            <span class="full">국제질병분류 제11차 개정판</span>
+            <dl><dt>관리</dt><dd>세계보건기구(WHO). 2022.1.1 발효</dd>
+            <dt>구조</dt><dd><b>Foundation</b>(다중 부모 의미망) + <b>MMS</b>(통계용 선형화) 이원 구조. 스템코드에 확장코드를 <code>&amp;</code>·<code>/</code>로 잇는 <b>후조합(클러스터 코딩)</b></dd>
+            <dt>용도</dt><dd>통계와 임상 기록 지원. 웹 API·코딩 도구로 시스템에 직접 연동. 국내 2031년경 이행 예정(변경 가능)</dd>
+            <dt>코드 예</dt><dd><code>5A11</code> Type 2 diabetes mellitus</dd></dl>
+            <p class="rn">💾 정보학 포인트: 분류와 용어의 경계를 좁힌 “디지털 우선” 분류. KCD와 코드 체계가 완전히 달라 EMR 전환 시 대규모 매핑 필요</p></div>
+        </div>
+
+        <p class="about-group">🧬 임상용어체계 (Terminology) — 개념 + 관계로 의미를 계산 가능하게 표현</p>
+        <div class="about-grid">
+          <div class="sys-card snomed"><span class="std snomed">SNOMED CT</span>
+            <span class="full">Systematized Nomenclature of Medicine – Clinical Terms</span>
+            <dl><dt>관리</dt><dd>SNOMED International (한국 2020년 회원국 가입, 한국어 확장 배포)</dd>
+            <dt>구조</dt><dd>개념(ID)–설명(FSN·동의어)–관계. <b>기술논리</b> 기반 정의와 is-a <b>다중 부모</b>. 19개 최상위 계층(소견·절차·신체구조·물질 등)</dd>
+            <dt>용도</dt><dd>EHR 임상 기록, FHIR 코딩, CDS 규칙, ECL 질의로 환자군 추출. ICD-10 매핑 제공</dd>
+            <dt>코드 예</dt><dd><code>44054006</code> Diabetes mellitus type 2</dd></dl>
+            <p class="rn">💾 정보학 포인트: “당뇨병의 모든 하위 개념”을 계층 추론으로 한 번에 질의 가능 → 데이터 추출·AI 학습 레이블링의 기반</p></div>
+          <div class="sys-card icnp"><span class="std icnp">ICNP</span>
+            <span class="full">국제간호실무분류 (International Classification for Nursing Practice)</span>
+            <dl><dt>관리</dt><dd>국제간호협의회(ICN)</dd>
+            <dt>구조</dt><dd>7축 모형(초점·판단·수단·행위·시간·위치·대상자)으로 원자 개념을 조합한 <b>사전조합</b> 간호진단·결과·중재 진술. SNOMED CT와의 매핑 참조집합 제공</dd>
+            <dt>용도</dt><dd>간호과정 기록의 표준화, 간호 카탈로그(하위 집합) 구성</dd>
+            <dt>표현 예</dt><dd>질병명 대신 “급성 통증”, “낙상 위험” 같은 <b>간호 현상</b>을 다룸</dd></dl>
+            <p class="rn">💾 정보학 포인트: 질병 중심 데이터에 가려진 <b>간호의 판단과 중재</b>를 측정 가능하게 만들어 간호 기여를 가시화</p></div>
+        </div>
+
+        <div class="about-foot">
+          <span class="small muted">💡 활동: 아래에서 “당뇨”를 검색해 5개 코드를 비교하고, 위 FHIR 예시에 KCD-9·ICD-11·ICNP 코드를 어떻게 추가할지, 매핑 과정에서 어떤 정보가 손실되는지 토의해 보세요.</span>
+          <button type="button" class="btn sm" id="aboutToOverview">📚 표준용어 개요로 이동</button>
+        </div>
+      </div>
+    </details>
     <div class="rosetta">
       <div class="card">
         <div class="search-wrap">
@@ -609,7 +714,7 @@ const Store = (() => {
     }
   };
 })();
-const KEYS = { seen:'nte.seen.v1', verify:'nte.verify.v1', vsubs:'nte.vsubs.v1', data:'nte.data.v1', progress:'nte.progress.v1', quiz:'nte.quiz.v1', pin:'nte.pin.v1', theme:'nte.theme.v1', tab:'nte.tab.v1' };
+const KEYS = { seen:'nte.seen.v1', verify:'nte.verify.v1', vsubs:'nte.vsubs.v1', data:'nte.data.v1', progress:'nte.progress.v1', quiz:'nte.quiz.v1', pin:'nte.pin.v1', theme:'nte.theme.v1', tab:'nte.tab.v1', about:'nte.about.v1' };
 
 function toast(msg){
   const t = $('#toast'); t.textContent = msg; t.classList.add('show');
@@ -1957,6 +2062,13 @@ if (!Store.available()) $('#storageNotice').hidden = false;
 if (MERGE_NOTE) setTimeout(() => toast(MERGE_NOTE), 400);
 renderProgress();
 $('#homeLink').addEventListener('click', e => { e.preventDefault(); activateTab('rosetta'); window.scrollTo({ top:0 }); });
+/* 개발 목적·표준 소개: 펼침 상태 기억 (첫 방문은 펼침) */
+(() => {
+  const box = $('#aboutBox'); if (!box) return;
+  box.open = Store.get(KEYS.about, true) !== false;
+  box.addEventListener('toggle', () => Store.set(KEYS.about, box.open));
+  $('#aboutToOverview').addEventListener('click', () => activateTab('overview'));
+})();
 activateTab(Store.get(KEYS.tab, 'rosetta'));
 })();
 </script>
