@@ -298,6 +298,18 @@ table.data tbody tr:hover{background:var(--surface-2)}
 .feedback.info{background:var(--warn-bg);border:1px solid color-mix(in srgb,var(--warn) 35%,transparent)}
 
 /* ---------- Quiz ---------- */
+.pg-sum{display:flex;align-items:center;gap:16px;padding-bottom:12px;border-bottom:1px solid var(--border)}
+.pg-list{list-style:none;margin:0;padding:0}
+.pg-item{padding:10px 0;border-bottom:1px solid var(--border)}
+.pg-top{display:flex;align-items:baseline;gap:8px}
+.pg-label{flex:1;font-weight:600;font-size:.94rem}
+.pg-item.done .pg-label{font-weight:500;color:var(--muted)}
+.pg-num{font-family:var(--f-mono);font-size:.86rem;color:var(--muted);white-space:nowrap}
+.pg-bar{height:6px;border-radius:99px;background:var(--surface-2);border:1px solid var(--border);overflow:hidden;margin:6px 0 0}
+.pg-bar i{display:block;height:100%;background:var(--primary)}
+.pg-item.done .pg-bar i{background:var(--ok)}
+.pg-foot{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:6px}
+.pg-foot .btn{flex:none}
 .quiz-progress{height:6px;border-radius:99px;background:var(--surface-2);overflow:hidden;margin:8px 0 16px}
 .quiz-progress i{display:block;height:100%;background:var(--primary);transition:width .3s}
 .q-text{font-size:1.08rem;font-weight:600;margin:8px 0 4px}
@@ -854,23 +866,38 @@ function searchConcepts(q){
    Progress
    ========================================================= */
 const TAB_IDS = ['rosetta','hierarchy','interop','records','quiz','overview','verify'];
-let progress = Object.assign({ tabs:{}, viewed:{}, interop:false, records:{}, quiz:false }, Store.get(KEYS.progress, {}) || {});
-['tabs','viewed','records'].forEach(k => { if (!progress[k] || typeof progress[k] !== 'object') progress[k] = {}; });
+/* 학습 진도는 “탭을 열어 봤는가”가 아니라 “무엇을 해 봤는가”로 잽니다.
+   - 탭 방문, 화면이 자동으로 골라 준 개념은 세지 않습니다.
+   - 항목마다 목표(goal)와 현재값(cur)이 있어 부분 진행도 퍼센트에 반영됩니다.
+   - 가중치(w): 손이 많이 가는 간호기록 코딩 8건은 3, 나머지는 1 */
+const PROGRESS_DEFAULT = { viewed:{}, hier:{}, mm:{}, interop:false, records:{}, quiz:false, vexport:false };
+let progress = Object.assign(clone(PROGRESS_DEFAULT), Store.get(KEYS.progress, {}) || {});
+['viewed','hier','mm','records'].forEach(k => { if (!progress[k] || typeof progress[k] !== 'object') progress[k] = {}; });
+delete progress.tabs;   // 이전 버전의 탭 방문 기록은 더 쓰지 않음
 function saveProgress(){ Store.set(KEYS.progress, progress); renderProgress(); }
+/* 사용자가 직접 한 행동만 기록 */
+function markProgress(kind, id){ if (id && !progress[kind][id]){ progress[kind][id] = true; saveProgress(); } }
 function progressItems(){
-  const viewedN = Object.keys(progress.viewed).length;
+  const n = o => Object.keys(o).length;
+  const best = Number(quizStore.best) || 0;
   return [
-    ...TAB_IDS.map(t => ({ label:`${$('#tab-'+t).textContent.trim()} 탭 방문`, done:!!progress.tabs[t] })),
-    { label:`개념 10개 이상 살펴보기 (${Math.min(viewedN,10)}/10)`, done: viewedN >= 10 },
-    { label:'상호운용성 매핑 완성', done: !!progress.interop },
-    ...RECORDS.map(r => ({ label:`간호기록 ${r.id}: ${r.title}`, done: !!progress.records[r.id] })),
-    { label:'퀴즈 1회 이상 완료', done: !!progress.quiz },
-    { label:'검증 미션 5건 이상 판정', done: !!progress.verify }
-  ];
+    { tab:'rosetta',   w:1, label:'개념 10개를 직접 골라 5개 표준 비교하기', cur:n(progress.viewed), goal:10, hint:'검색하거나 목록에서 개념을 골라 보세요.' },
+    { tab:'hierarchy', w:1, label:'다중 부모(★) 개념 3개의 계층 살펴보기', cur:n(progress.hier), goal:3, hint:'★ 표시가 있는 개념을 골라 부모가 여러 개인 구조를 확인하세요.' },
+    { tab:'interop',   w:1, label:'상호운용성 매핑 완성하기', cur:progress.interop ? 1 : 0, goal:1, hint:'두 병원의 로컬 용어를 모두 알맞은 표준코드에 매핑하세요.' },
+    { tab:'records',   w:3, label:`간호기록 ${RECORDS.length}건 코딩하기`, cur:RECORDS.filter(r => progress.records[r.id]).length, goal:RECORDS.length, hint:'기록마다 핵심 개념을 모두 코딩하면 1건이 완료됩니다.' },
+    { tab:'quiz',      w:1, label:'퀴즈 10문항 끝까지 풀기', cur:progress.quiz ? 1 : 0, goal:1, hint:'10문항을 풀고 결과 화면까지 가세요.' },
+    { tab:'quiz',      w:1, label:'퀴즈 7점 이상 받기', cur:Math.min(best, 7), goal:7, unit:'점', hint:best ? `지금까지 최고 ${best}점입니다. 오답 재풀이로 복습한 뒤 다시 도전하세요.` : '10문항 퀴즈에서 7점 이상을 받으세요.' },
+    { tab:'overview',  w:1, label:'매핑 불일치 사례 3건을 “개념 보기”로 확인하기', cur:n(progress.mm), goal:3, hint:'매핑 불일치 학습 코너에서 사례의 “개념 보기”를 누르세요.' },
+    { tab:'verify',    w:1, label:'검증 미션 5건 판정하기', cur:vDoneCount(), goal:5, hint:'공식 원본과 대조해 일치·불일치·찾지 못함을 판정하세요.' },
+    { tab:'verify',    w:1, label:'검증 결과를 파일로 내보내기', cur:progress.vexport ? 1 : 0, goal:1, hint:'반·학번·이름을 적고 JSON·CSV·문서 중 하나로 내보내세요.' }
+  ].map(i => Object.assign(i, { cur:Math.min(i.cur, i.goal), done:i.cur >= i.goal }));
+}
+function progressPct(items){
+  const tot = items.reduce((t, i) => t + i.w, 0);
+  return Math.round(items.reduce((t, i) => t + i.w * i.cur / i.goal, 0) / tot * 100);
 }
 function renderProgress(){
-  const items = progressItems();
-  const pct = Math.round(items.filter(i=>i.done).length / items.length * 100);
+  const pct = progressPct(progressItems());
   $('#progressText').textContent = pct + '%';
   $('#progressBar').style.width = pct + '%';
   $('#progressBtn').setAttribute('aria-label', `학습 진도 ${pct}% — 자세히 보기`);
@@ -940,7 +967,7 @@ function activateTab(id, focus=false){
     if (on) t.scrollIntoView({ block:'nearest', inline:'nearest' });
   });
   $$('[role=tabpanel]').forEach(p => p.hidden = p.id !== 'panel-'+id);
-  if (TAB_IDS.includes(id)) { progress.tabs[id] = true; saveProgress(); Store.set(KEYS.tab, id); }
+  if (TAB_IDS.includes(id)) Store.set(KEYS.tab, id);
   if (renderers[id]) renderers[id]();
 }
 function scrollToMain(){ const y = $('#main').getBoundingClientRect().top + window.scrollY - 120; if (window.scrollY > y) window.scrollTo({ top: Math.max(0,y) }); }
@@ -1031,7 +1058,6 @@ function renderDetail(){
   const c = getConcept(R.sel) || DATA[0];
   if (!c){ $('#conceptDetail').innerHTML = '<p class="muted">데이터가 없습니다.</p>'; return; }
   R.sel = c.id;
-  if (!progress.viewed[c.id]) { progress.viewed[c.id] = true; saveProgress(); }
   $('#conceptDetail').innerHTML = `
     <div class="concept-head">
       <div><div class="small muted mono">${esc(c.id)} · ${esc(c.category)}</div>
@@ -1047,13 +1073,13 @@ renderers.rosetta = () => { renderFilters(); renderResults(); renderDetail(); };
 $('#searchInput').addEventListener('input', e => {
   R.q = e.target.value; renderResults();
   const first = $('#resultList .result');
-  if (first && R.q.trim()) { R.sel = first.dataset.id; renderDetail(); $$('#resultList .result').forEach(b => b.setAttribute('aria-pressed', b.dataset.id===R.sel)); }
+  if (first && R.q.trim()) { R.sel = first.dataset.id; markProgress('viewed', R.sel); renderDetail(); $$('#resultList .result').forEach(b => b.setAttribute('aria-pressed', b.dataset.id===R.sel)); }
 });
 $('#catFilters').addEventListener('click', e => { const b = e.target.closest('[data-cat]'); if (!b) return; R.cat = b.dataset.cat; renderFilters(); renderResults(); });
 $('#typeFilters').addEventListener('click', e => { const b = e.target.closest('[data-type]'); if (!b) return; R.type = b.dataset.type; renderFilters(); renderResults(); });
 $('#resultList').addEventListener('click', e => {
   const b = e.target.closest('.result'); if (!b) return;
-  R.sel = b.dataset.id; $$('#resultList .result').forEach(x => x.setAttribute('aria-pressed', x===b)); renderDetail();
+  R.sel = b.dataset.id; markProgress('viewed', R.sel); $$('#resultList .result').forEach(x => x.setAttribute('aria-pressed', x===b)); renderDetail();
   if (window.innerWidth < 900) $('#conceptDetail').scrollIntoView({ behavior:'smooth', block:'start' });
 });
 $('#conceptDetail').addEventListener('click', e => {
@@ -1168,9 +1194,10 @@ function renderHierarchy(){
   renderIcdTree(); renderSnomedSvg();
 }
 renderers.hierarchy = renderHierarchy;
-$('#hierSelect').addEventListener('change', e => { H.sel = e.target.value; renderSnomedSvg(); });
-$('#icdTree').addEventListener('click', e => { const b = e.target.closest('.leaf'); if (!b) return; H.sel = b.dataset.id; renderSnomedSvg(); });
-$('#multiChips').addEventListener('click', e => { const b = e.target.closest('[data-id]'); if (!b) return; H.sel = b.dataset.id; renderSnomedSvg(); });
+function pickHier(id){ H.sel = id; const c = getConcept(id); if (c && c.snomed.parents.length > 1) markProgress('hier', id); renderSnomedSvg(); }
+$('#hierSelect').addEventListener('change', e => pickHier(e.target.value));
+$('#icdTree').addEventListener('click', e => { const b = e.target.closest('.leaf'); if (b) pickHier(b.dataset.id); });
+$('#multiChips').addEventListener('click', e => { const b = e.target.closest('[data-id]'); if (b) pickHier(b.dataset.id); });
 
 /* =========================================================
    3. Interoperability simulator
@@ -1496,10 +1523,10 @@ const QUIZ_POOL = [
   { id:'q32', type:'mc', q:'HL7 FHIR에서 하나의 임상 개념에 여러 표준 코드(예: SNOMED CT와 ICD-10)를 함께 담는 데이터 형식은?', opts:['CodeableConcept','Patient','Bundle','Narrative','Identifier'], a:0, exp:'CodeableConcept는 coding 배열에 여러 코드체계의 코드를 나란히 담고, text에 원문 표현을 둡니다.' },
   /* ---- 복수 선택 (해당하는 것을 모두 고르기) ---- */
   { id:'q33', type:'multi', q:'ICD-11에 대한 설명으로 옳은 것을 모두 고르세요.', opts:['2022년 1월 1일 WHO에서 발효되었다','스템코드에 확장코드를 붙이는 후조합을 지원한다','세계보건기구(WHO)가 관리한다','KCD-9과 코드 형식이 같다','국내 모든 의료기관이 2022년부터 사용하고 있다'], a:[0,1,2], exp:'ICD-11은 WHO가 관리하며 2022.1.1 발효되었고 후조합(클러스터 코딩)을 지원합니다. 코드 형식은 KCD-9(ICD-10 기반)과 다르고, 국내 이행은 2031년경 예정입니다.' },
-  { id:'q34', type:'multi', q:'SNOMED CT에 대한 설명으로 옳은 것을 모두 고르세요.', opts:['한 개념이 여러 부모(is-a)를 가질 수 있다','SNOMED International이 관리한다','질환뿐 아니라 소견·절차·사건도 표현한다','세계보건기구(WHO)가 관리한다','통계 집계를 위한 상호배타적 범주가 주목적이다'], a:[0,1,2], exp:'SNOMED CT는 SNOMED International이 관리하는 임상용어체계입니다. 다중 부모를 허용하고 임상 표현 전반을 다룹니다. 상호배타적 범주는 분류체계(KCD·ICD)의 특징입니다.' },
-  { id:'q35', type:'multi', q:'KCD·ICD-10 코드와 개념이 바르게 짝지어진 것을 모두 고르세요.', opts:['I10 — 본태성 고혈압','J45 — 천식','N18 — 만성 콩팥병','F05 — 치매','R52 — 발열'], a:[0,1,2], exp:'F05는 섬망(치매는 F03), R52는 통증(발열은 R50.9)입니다.' },
-  { id:'q36', type:'multi', q:'KCD·ICD-10의 증상·징후 장(XVIII장, R코드)에 분류되는 개념을 모두 고르세요.', opts:['통증','발열','호흡곤란','변비','섬망'], a:[0,1,2], exp:'통증 R52, 발열 R50.9, 호흡곤란 R06.0은 XVIII장입니다. 변비(K59.0)는 소화계통(XI장), 섬망(F05)은 정신 및 행동 장애(V장)에 분류됩니다.' },
-  { id:'q37', type:'multi', q:'SNOMED CT에서 직접 부모(is-a)가 2개 이상인 다중 부모 개념을 모두 고르세요. (2026-11 International 릴리스 기준)', opts:['심방세동','패혈증','폐렴','2형 당뇨병','천식'], a:[0,1,2], exp:'심방세동과 패혈증은 부모가 3개, 폐렴은 2개입니다. 2형 당뇨병과 천식은 부모가 1개입니다. 계층 탐색 탭에서 직접 확인해 보세요.' },
+  { id:'q34', type:'multi', q:'SNOMED CT에 대한 설명으로 옳은 것을 모두 고르세요.', opts:['한 개념이 여러 부모(is-a)를 가질 수 있다','SNOMED International이 관리한다','질환뿐 아니라 소견·절차·사건도 표현한다','한국은 2020년에 회원국으로 가입했다','세계보건기구(WHO)가 관리한다'], a:[0,1,2,3], exp:'SNOMED CT는 SNOMED International이 관리하는 임상용어체계입니다. 다중 부모를 허용하고 임상 표현 전반을 다루며, 한국은 2020년 회원국이 되었습니다. WHO가 관리하는 것은 ICD입니다.' },
+  { id:'q35', type:'multi', q:'KCD·ICD-10 코드와 개념이 바르게 짝지어진 것을 모두 고르세요.', opts:['I10 — 본태성 고혈압','J45 — 천식','N18 — 요로감염','F05 — 치매','R52 — 발열'], a:[0,1], exp:'N18은 만성 콩팥병(요로감염은 N39.0), F05는 섬망(치매는 F03), R52는 통증(발열은 R50.9)입니다.' },
+  { id:'q36', type:'multi', q:'KCD·ICD-10의 증상·징후 장(XVIII장, R코드)에 분류되는 개념을 모두 고르세요.', opts:['통증','발열','호흡곤란','두통','변비'], a:[0,1,2,3], exp:'통증 R52, 발열 R50.9, 호흡곤란 R06.0, 두통 R51은 XVIII장입니다. 변비(K59.0)는 증상처럼 보이지만 소화계통(XI장)에 분류됩니다.' },
+  { id:'q37', type:'multi', q:'SNOMED CT에서 직접 부모(is-a)가 2개 이상인 다중 부모 개념을 모두 고르세요. (2026-11 International 릴리스 기준)', opts:['심방세동','패혈증','2형 당뇨병','천식','본태성 고혈압'], a:[0,1], exp:'심방세동과 패혈증은 부모가 3개입니다. 2형 당뇨병, 천식, 본태성 고혈압은 부모가 1개입니다. 계층 탐색 탭에서 직접 확인해 보세요.' },
   { id:'q38', type:'multi', q:'표준코드 없이 로컬 용어로만 기록할 때 생기는 문제를 모두 고르세요.', opts:['같은 질환이 기관마다 다르게 집계되어 통계가 왜곡된다','임상의사결정지원(CDS) 규칙이 다른 표현을 인식하지 못한다','다기관 연구에서 데이터를 수작업으로 정제해야 한다','환자 개인정보가 자동으로 익명화된다','기록 용량이 줄어 저장 비용이 절감된다'], a:[0,1,2], exp:'로컬 용어는 통계 왜곡, CDS 실패, 데이터 통합 비용 증가로 이어집니다. 익명화나 저장 비용과는 관계가 없습니다.' },
   /* ---- 짝짓기 ---- */
   { id:'q39', type:'match', q:'각 표준과 관리기관을 짝지으세요.', pairs:[['KCD','국가데이터처 (구 통계청)'],['ICD-11','세계보건기구(WHO)'],['SNOMED CT','SNOMED International'],['ICNP','국제간호협의회(ICN)']], exp:'KCD는 국가데이터처, ICD는 WHO, SNOMED CT는 SNOMED International, ICNP는 ICN이 관리합니다.' },
@@ -1524,7 +1551,7 @@ const QZ = { mode:'idle', list:[], i:0, score:0, answered:false, wrongNow:[], re
 /* 문항 형식. mc 는 반드시 5지(4지 선다는 쓰지 않음). match·bin 은 카드를 칸에 놓는 방식(끌어다 놓기 또는 카드 선택 후 칸 선택) */
 const QZ_TYPE = { ox:'O/X', mc:'5지 선다', multi:'복수 선택', match:'짝짓기', bin:'분류하기' };
 const QZ_HINT = {
-  multi:'해당하는 보기를 <b>모두</b> 고른 뒤 “답 제출”을 누르세요.',
+  multi:'해당하는 보기를 <b>모두</b> 고른 뒤 “답 제출”을 누르세요. 정답 개수는 문항마다 다릅니다.',
   match:'아래 카드를 알맞은 칸으로 <b>끌어다 놓으세요</b>. 터치·키보드: 카드를 선택한 뒤 칸 이름을 누릅니다. 놓은 카드를 다시 누르면 되돌아갑니다.',
   bin:'아래 카드를 알맞은 칸으로 <b>끌어다 놓으세요</b>. 터치·키보드: 카드를 선택한 뒤 칸 이름을 누릅니다. 놓은 카드를 다시 누르면 되돌아갑니다.'
 };
@@ -1630,7 +1657,7 @@ $('#quizBox').addEventListener('click', e => {
   if (t.id === 'qzStart') return startQuiz(false);
   if (t.id === 'qzRetry') return startQuiz(true);
   if (t.id === 'qzHome'){ QZ.mode = 'idle'; return renderQuiz(); }
-  if (t.id === 'qzClear'){ if (window.confirm('퀴즈 점수와 오답 기록을 모두 지울까요?')){ quizStore = clone(QZ_DEFAULT); saveQuiz(); renderQuiz(); } return; }
+  if (t.id === 'qzClear'){ if (window.confirm('퀴즈 점수와 오답 기록을 모두 지울까요?')){ quizStore = clone(QZ_DEFAULT); saveQuiz(); renderProgress(); renderQuiz(); } return; }
   if (t.id === 'qzNext'){
     QZ.i++; Object.assign(QZ, { answered:false, pick:null, multi:[], place:{}, sel:null });
     if (QZ.i >= QZ.list.length){
@@ -1768,7 +1795,7 @@ function openConcept(id){
 }
 $('#overviewBox').addEventListener('click', e => {
   const f = e.target.closest('[data-mm]'); if (f){ MM.type = f.dataset.mm; renderMismatch(); return; }
-  const o = e.target.closest('[data-open]'); if (o) openConcept(o.dataset.open);
+  const o = e.target.closest('[data-open]'); if (o){ markProgress('mm', o.dataset.open); markProgress('viewed', o.dataset.open); openConcept(o.dataset.open); }
 });
 renderers.overview = () => { renderOverview(); renderMismatch(); };
 
@@ -1961,7 +1988,7 @@ $('#verifyBox').addEventListener('click', e => {
     saveV(); vRerenderCard(id);
     const card = $(`#vList [data-task="${CSS.escape(id)}"]`);
     const focusEl = card && ($('input[data-vf="value"]', card) || $(`[data-vst="${b.dataset.vst}"]`, card)); if (focusEl) focusEl.focus();
-    if (vDoneCount() >= 5 && !progress.verify){ progress.verify = true; saveProgress(); toast('🎉 검증 미션 5건 달성!'); }
+    if (vDoneCount() >= 5 && !progress.verify){ progress.verify = true; saveProgress(); toast('🎉 검증 미션 5건 달성!'); } else renderProgress();
     const sum = $('#verifyBox .v-summary'); if (sum) sum.innerHTML = vSummaryHTML();
     return;
   }
@@ -1971,7 +1998,7 @@ $('#verifyBox').addEventListener('click', e => {
     vState.assigned = shuffle(todo.length >= 5 ? todo : pool).slice(0,5).map(t => t.id); saveV(); renderVerify(); toast('과제 5개를 배정했습니다'); return;
   }
   if (b.id === 'vAll'){ vState.assigned = null; saveV(); renderVerify(); return; }
-  if (b.id === 'vClear'){ if (!window.confirm('검증 미션 기록을 모두 지울까요?')) return; vState = { cls:vState.cls, sid:vState.sid, name:vState.name, results:{}, assigned:null }; saveV(); renderVerify(); return; }
+  if (b.id === 'vClear'){ if (!window.confirm('검증 미션 기록을 모두 지울까요?')) return; vState = { cls:vState.cls, sid:vState.sid, name:vState.name, results:{}, assigned:null }; saveV(); delete progress.verify; saveProgress(); renderVerify(); return; }
   if (b.id === 'vExportJson' || b.id === 'vExportCsv' || b.id === 'vExportDocx'){
     const rows = vRows();
     if (!rows.length){ toast('판정한 과제가 없습니다'); return; }
@@ -1981,14 +2008,14 @@ $('#verifyBox').addEventListener('click', e => {
     if (miss && !window.confirm(`불일치인데 올바른 값이 비어 있는 과제가 ${miss}개 있습니다. 그래도 내보낼까요?`)) return;
     if (b.id === 'vExportJson'){
       const payload = { type:'nte-verification', schema:1, app:'Nursing Terminology Explorer', student:vWhoText(), class:vState.cls, student_id:vState.sid, name:vState.name, exported_at:new Date().toISOString(), results:rows };
-      if (downloadText(vFileBase()+'.json', JSON.stringify(payload, null, 2), 'application/json')) toast('제출용 JSON을 저장했습니다');
+      if (downloadText(vFileBase()+'.json', JSON.stringify(payload, null, 2), 'application/json')){ toast('제출용 JSON을 저장했습니다'); if (!progress.vexport){ progress.vexport = true; saveProgress(); } }
     } else if (b.id === 'vExportDocx'){
-      if (downloadText(vFileBase()+'.docx', vDocxBlob(rows))) toast('문서 파일을 저장했습니다. Google 드라이브에 올리면 Google 문서로 열립니다');
+      if (downloadText(vFileBase()+'.docx', vDocxBlob(rows))){ toast('문서 파일을 저장했습니다. Google 드라이브에 올리면 Google 문서로 열립니다'); if (!progress.vexport){ progress.vexport = true; saveProgress(); } }
     } else {
       const head = ['반','학번','이름','task_id','concept_id','개념','항목','KCD코드','앱 제안값','판정','올바른 값','근거','메모','수정시각'];
       const q = v => `"${String(v).replace(/"/g,'""')}"`;
       const lines = [head.map(q).join(',')].concat(rows.map(r => [vState.cls,vState.sid,vState.name,r.task_id,r.concept_id,r.concept_ko,r.item,r.kcd_code,r.app_value,V_STATUS[r.status],r.value,r.source,r.note,r.updated].map(q).join(',')));
-      if (downloadText(vFileBase()+'.csv', '﻿' + lines.join('\r\n'), 'text/csv;charset=utf-8')) toast('CSV를 저장했습니다');
+      if (downloadText(vFileBase()+'.csv', '﻿' + lines.join('\r\n'), 'text/csv;charset=utf-8')){ toast('CSV를 저장했습니다'); if (!progress.vexport){ progress.vexport = true; saveProgress(); } }
     }
   }
 });
@@ -2284,11 +2311,21 @@ $('#adminBox').addEventListener('change', e => {
    Progress modal & init
    ========================================================= */
 $('#progressBtn').addEventListener('click', () => {
-  const items = progressItems();
-  openModal({ title:'학습 진도', narrow:true, html:`<ul style="list-style:none;padding:0;margin:0">${items.map(i => `<li style="padding:4px 0">${i.done?'✅':'⬜'} ${esc(i.label)}</li>`).join('')}</ul>
-    <div class="row" style="margin-top:12px"><span class="spacer"></span><button type="button" class="btn sm danger" id="progReset">진도 초기화</button></div>`,
-    onMount(back, close){ $('#progReset', back).addEventListener('click', () => { if (!window.confirm('학습 진도를 초기화할까요?')) return;
-      progress = { tabs:{}, viewed:{}, interop:false, records:{}, quiz:false }; saveProgress(); close(); toast('진도를 초기화했습니다'); }); } });
+  const items = progressItems(), pct = progressPct(items);
+  const state = i => i.done ? ['✅','완료'] : (i.cur > 0 ? ['🔶','진행 중'] : ['⬜','시작 전']);
+  openModal({ title:'학습 진도', html:`
+    <div class="pg-sum"><div class="score-big">${pct}<span class="small muted">%</span></div>
+      <div><b>활동 ${items.filter(i => i.done).length} / ${items.length} 완료</b><p class="small muted" style="margin:2px 0 0">탭을 열어 보는 것만으로는 오르지 않습니다. 아래 활동을 직접 해야 채워지며, 일부만 해도 그만큼 반영됩니다.</p></div></div>
+    <ul class="pg-list">${items.map(i => { const [ico, st] = state(i);
+      return `<li class="pg-item${i.done ? ' done' : ''}">
+        <div class="pg-top"><span aria-hidden="true">${ico}</span><span class="pg-label">${esc(i.label)}<span class="sr-only"> — ${st}</span></span><span class="pg-num">${i.cur}/${i.goal}${i.unit || ''}</span></div>
+        <div class="pg-bar" aria-hidden="true"><i style="width:${i.cur / i.goal * 100}%"></i></div>
+        ${i.done ? '' : `<div class="pg-foot"><span class="small muted">${esc(i.hint)}</span><button type="button" class="btn sm" data-go="${i.tab}" aria-label="${esc(i.label)} — 해당 화면으로 이동">하러 가기 →</button></div>`}</li>`; }).join('')}</ul>
+    <div class="row" style="margin-top:12px"><span class="small muted">퀴즈 점수와 검증 미션 판정은 각 탭의 “기록 초기화”로 지웁니다.</span><span class="spacer"></span><button type="button" class="btn sm danger" id="progReset">진도 초기화</button></div>`,
+    onMount(back, close){
+      back.addEventListener('click', e => { const g = e.target.closest('[data-go]'); if (g){ close(); activateTab(g.dataset.go, true); scrollToMain(); } });
+      $('#progReset', back).addEventListener('click', () => { if (!window.confirm('학습 진도를 초기화할까요?\n(퀴즈 점수와 검증 미션 판정은 각 탭에서 따로 지웁니다)')) return;
+        progress = clone(PROGRESS_DEFAULT); saveProgress(); close(); if (!$('#panel-records').hidden) renderRecords(); toast('진도를 초기화했습니다'); }); } });
 });
 
 if (!Store.available()) $('#storageNotice').hidden = false;

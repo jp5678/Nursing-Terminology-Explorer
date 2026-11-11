@@ -187,6 +187,13 @@ try {
         return out;
       })).forEach(x => note(`${tag}${where}: ${x}`));
     };
+    // 학습 진도: 탭을 열어 보는 것만으로는 오르지 않아야 함
+    const pct = async () => Number((await p.innerText('#progressText')).replace('%', ''));
+    if (await pct() !== 0) note(`${tag}학습 진도: 아무것도 하지 않았는데 ${await pct()}%`);
+    for (const t of ['hierarchy', 'interop', 'records', 'quiz', 'overview', 'verify', 'rosetta']) await p.click('#tab-' + t);
+    if (await pct() !== 0) note(`${tag}학습 진도: 탭 방문만으로 ${await pct()}%로 오름`);
+    await p.locator('#resultList .result').first().click();
+    if (await pct() <= 0) note(tag + '학습 진도: 개념을 직접 골라도 오르지 않음');
     // 개념 검색·비교
     await p.fill('#searchInput', 'zzzz'); await check('검색(결과 없음)'); await p.fill('#searchInput', '');
     const n = await p.locator('#resultList .result').count();
@@ -287,7 +294,12 @@ try {
     if (await p.isVisible('#tab-admin')) note(tag + '교수자: 종료 후에도 탭이 남음');
     // 키보드 탭 이동, 진도 창, 테마
     await p.focus('#tab-rosetta'); await p.keyboard.press('ArrowRight'); await p.keyboard.press('End'); await p.keyboard.press('Home');
-    await p.click('#progressBtn'); await p.keyboard.press('Escape');
+    // 위 활동을 모두 마친 뒤의 진도 (매핑 불일치 사례만 1/3)
+    if (await pct() < 90) note(`${tag}학습 진도: 활동을 대부분 마쳤는데 ${await pct()}%`);
+    await p.click('#progressBtn'); await check('학습 진도 창');
+    const go = p.locator('#modalRoot [data-go]').first();
+    if (await go.count()) { const dest = await go.getAttribute('data-go'); await go.click(); if (!(await p.isVisible('#panel-' + dest))) note(tag + '학습 진도: “하러 가기” 이동 실패'); }
+    else await p.keyboard.press('Escape');
     await p.click('#themeBtn'); await overflow('다크 모드');
     await p.close();
   }
@@ -318,6 +330,7 @@ try {
       await run('퀴즈 결과');
       await p.click('#tab-overview'); await run('표준용어 개요');
       await p.click('#tab-verify'); await p.locator('[data-vst="mismatch"]').first().click(); await run('검증 미션');
+      await p.click('#progressBtn'); await run('학습 진도 창'); await p.keyboard.press('Escape');
       await p.click('#lockBtn'); await run('PIN 창'); await p.keyboard.press('Escape');
       await enterInstructor(p); await run('교수자');
       await p.locator('[data-edit]').first().click(); await run('편집 창');
