@@ -298,7 +298,7 @@ try {
     if (await pct() < 90) note(`${tag}학습 진도: 활동을 대부분 마쳤는데 ${await pct()}%`);
     await p.click('#progressBtn'); await check('학습 진도 창');
     const go = p.locator('#modalRoot [data-go]').first();
-    if (await go.count()) { const dest = await go.getAttribute('data-go'); await go.click(); if (!(await p.isVisible('#panel-' + dest))) note(tag + '학습 진도: “하러 가기” 이동 실패'); }
+    if (await go.count()) { const dest = await go.getAttribute('data-go'); await go.click(); if (!(await p.isVisible('#panel-' + dest))) note(tag + '학습 진도: “바로 가기” 이동 실패'); }
     else await p.keyboard.press('Escape');
     await p.click('#themeBtn'); await overflow('다크 모드');
     await p.close();
