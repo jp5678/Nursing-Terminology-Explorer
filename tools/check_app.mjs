@@ -6,7 +6,7 @@
      1. 데이터 무결성  개념·간호기록·퀴즈·매핑 사례가 서로 참조하는 ID·코드가 맞는지
      2. 정적 구조      중복 id, 존재하지 않는 대상을 가리키는 aria/label 연결
      3. 동작           모든 탭을 실제로 조작(전 개념 순회, 상호운용성 정답·오답, 간호기록 전 표현,
-                       퀴즈 완주, 검증 미션, 교수자 진입·편집·추가)하며 스크립트 오류·가로 넘침·
+                       퀴즈 완주·형식별 채점·끌어다 놓기, 검증 미션, 교수자 진입·편집·추가)하며 스크립트 오류·가로 넘침·
                        이름 없는 버튼·레이블 없는 입력·undefined 노출 확인 (데스크톱 1280px, 모바일 360px)
      4. 접근성         axe-core 로 WCAG 2 A/AA 검사 (라이트·다크, 전 탭)
 
@@ -53,7 +53,7 @@ if (USE_AXE) {
 let html = fs.readFileSync(FILE, 'utf8');
 const TAIL = '})();\n</script>\n</body>';
 if (!html.includes(TAIL)) { console.error('index.html 끝부분 구조가 바뀌어 점검용 훅을 넣을 수 없습니다.'); process.exit(2); }
-html = html.replace(TAIL, 'window.__dbg = { TERMINOLOGY_DATA, RECORDS, INTEROP_TERMS, INTEROP_TARGETS, INTEROP_EXTRA, MISMATCH, MM_TYPES, QUIZ_POOL, getConcept, searchConcepts, parseRecord };\n' + TAIL);
+html = html.replace(TAIL, 'window.__dbg = { TERMINOLOGY_DATA, RECORDS, INTEROP_TERMS, INTEROP_TARGETS, INTEROP_EXTRA, MISMATCH, MM_TYPES, QUIZ_POOL, QZ, QZ_TYPE, getConcept, searchConcepts, parseRecord };\n' + TAIL);
 const iter = Number((html.match(/const PIN_ITER = (\d+);/) || [])[1]);
 const pinLine = /const DEFAULT_PIN_HASH = \{[^}]*\};/;
 if (!iter || !pinLine.test(html)) { console.error('PIN 해시 설정(PIN_ITER, DEFAULT_PIN_HASH)을 찾을 수 없습니다.'); process.exit(2); }
@@ -75,6 +75,16 @@ async function open(viewport) {
   await p.goto(ORIGIN);
   return p;
 }
+const answerAny = async p => {
+  if (await p.locator('#quizBox [data-ans]').count()) return p.locator('#quizBox [data-ans]').first().click();
+  if (await p.locator('#quizBox [data-multi]').count()) { await p.locator('#quizBox [data-multi]').first().click(); return p.click('#qzSubmit'); }
+  for (let g = 0; g < 30 && await p.locator('.qz-pool [data-chip]').count(); g++) {
+    await p.locator('.qz-pool [data-chip]').first().click();
+    const empty = p.locator('.qz-target:not(:has(.drop [data-chip])) .tg-btn');
+    await ((await empty.count()) ? empty.first() : p.locator('.tg-btn').first()).click();
+  }
+  return p.click('#qzSubmit');
+};
 const enterInstructor = async p => { await p.click('#lockBtn'); await p.fill('#pinInput', TEST_PIN); await p.keyboard.press('Enter'); await p.waitForSelector('#panel-admin:not([hidden])', { timeout: 15000 }); };
 
 try {
@@ -118,10 +128,24 @@ try {
     });
     const qids = d.QUIZ_POOL.map(q => q.id); if (new Set(qids).size !== qids.length) out.push('퀴즈 ID 중복');
     if (d.QUIZ_POOL.length < 10) out.push('퀴즈 문항이 10개 미만');
+    Object.keys(d.QZ_TYPE).forEach(t => { if (!d.QUIZ_POOL.some(q => q.type === t)) out.push('퀴즈에 ' + d.QZ_TYPE[t] + ' 형식 문항이 없음'); });
+    const said = (document.querySelector('#panel-quiz .panel-head').textContent.match(/문항 풀 (\d+)개/) || [])[1];
+    if (said && Number(said) !== d.QUIZ_POOL.length) out.push(`퀴즈 안내문의 문항 수(${said})와 실제 문항 수(${d.QUIZ_POOL.length})가 다름`);
     d.QUIZ_POOL.forEach(q => {
-      if (q.type === 'mc' && !(q.a >= 0 && q.a < q.opts.length)) out.push(q.id + ' 정답 인덱스 오류');
+      const uniq = a => new Set(a).size === a.length;
+      if (!d.QZ_TYPE[q.type]) out.push(q.id + ' 알 수 없는 문항 형식 ' + q.type);
+      if (!q.q || !q.exp) out.push(q.id + ' 문제 또는 해설 누락');
       if (q.type === 'ox' && !['O', 'X'].includes(q.a)) out.push(q.id + ' O/X 정답 오류');
-      ((q.q + ' ' + q.exp + ' ' + (q.opts || []).join(' ')).match(/\b\d{6,18}\b/g) || []).forEach(code => { if (!known(code)) out.push(`${q.id} 코드 ${code} 가 데이터·참고 코드 목록에 없음`); });
+      if (q.type === 'mc' || q.type === 'multi') {
+        if (!Array.isArray(q.opts) || q.opts.length !== 5) out.push(q.id + ' 보기가 5개가 아님 (4지 선다 금지)');
+        else if (!uniq(q.opts)) out.push(q.id + ' 보기 중복');
+      }
+      if (q.type === 'mc' && !(q.a >= 0 && q.a < q.opts.length)) out.push(q.id + ' 정답 인덱스 오류');
+      if (q.type === 'multi' && !(Array.isArray(q.a) && q.a.length >= 2 && q.a.length < q.opts.length && uniq(q.a) && q.a.every(x => x >= 0 && x < q.opts.length))) out.push(q.id + ' 복수 선택 정답 오류');
+      if (q.type === 'match' && !(Array.isArray(q.pairs) && q.pairs.length >= 3 && uniq(q.pairs.map(x => x[0])) && uniq(q.pairs.map(x => x[1])))) out.push(q.id + ' 짝짓기 쌍 오류(3쌍 이상, 중복 없음)');
+      if (q.type === 'bin' && !(Array.isArray(q.bins) && q.bins.length >= 2 && Array.isArray(q.items) && uniq(q.items.map(x => x[0])) && q.items.every(x => x[1] >= 0 && x[1] < q.bins.length) && q.bins.every((_, bi) => q.items.some(x => x[1] === bi)))) out.push(q.id + ' 분류하기 항목 오류');
+      const words = (q.opts || []).concat((q.pairs || []).flat(), q.bins || [], (q.items || []).map(x => x[0]));
+      ((q.q + ' ' + q.exp + ' ' + words.join(' ')).match(/\b\d{6,18}\b/g) || []).forEach(code => { if (!known(code)) out.push(`${q.id} 코드 ${code} 가 데이터·참고 코드 목록에 없음`); });
     });
     const first = q => (d.searchConcepts(q)[0] || {}).concept_ko;
     [['E11', '2형 당뇨병'], ['44054006', '2형 당뇨병'], ['DM', '2형 당뇨병'], ['5A11', '2형 당뇨병'], ['htn', '본태성 고혈압'], ['ㄴㅅ', '낙상']]
@@ -200,9 +224,30 @@ try {
     await overflow('간호기록');
     // 퀴즈 완주 + 오답 재풀이
     await p.click('#tab-quiz'); await p.click('#qzStart');
-    for (let i = 0; i < 10; i++) { await p.locator('#quizBox .opt').first().click(); await check('퀴즈 문항'); await p.click('#qzNext'); }
+    const seenTypes = new Set();
+    for (let i = 0; i < 10; i++) { seenTypes.add(await p.evaluate(() => window.__dbg.QZ.list[window.__dbg.QZ.i].type)); await check('퀴즈 문항(응답 전)'); await answerAny(p); await check('퀴즈 문항(응답 후)'); await overflow('퀴즈 문항'); await p.click('#qzNext'); }
+    if (seenTypes.size < 5) note(`${tag}퀴즈: 한 회에 형식 5종이 모두 나오지 않음 (${[...seenTypes]})`);
     await check('퀴즈 결과'); await overflow('퀴즈');
-    if (await p.locator('#qzRetry:not([disabled])').count()) { await p.click('#qzRetry'); await p.locator('#quizBox .opt').first().click(); }
+    if (await p.locator('#qzRetry:not([disabled])').count()) { await p.click('#qzRetry'); await answerAny(p); }
+    // 정답으로 완주: 형식별 채점이 맞으면 10점
+    await p.reload(); await p.click('#tab-quiz'); await p.click('#qzStart');
+    let dragged = false;
+    for (let i = 0; i < 10; i++) {
+      const q = await p.evaluate(() => { const z = window.__dbg.QZ, x = z.list[z.i]; return { type: x.type, a: x.a, key: x.key }; });
+      if (q.type === 'ox' || q.type === 'mc') await p.click(`#quizBox [data-ans="${q.a}"]`);
+      else if (q.type === 'multi') { for (const oi of q.a) await p.click(`#quizBox [data-multi="${oi}"]`); await p.click('#qzSubmit'); }
+      else {
+        for (let ci = 0; ci < q.key.length; ci++) {
+          if (!dragged && viewport.width > 800) { await p.locator(`.qz-pool [data-chip="${ci}"]`).dragTo(p.locator(`.qz-target[data-tg="${q.key[ci]}"]`)); dragged = true;
+            if (!(await p.locator(`.qz-target[data-tg="${q.key[ci]}"] [data-chip="${ci}"]`).count())) note(tag + '퀴즈: 끌어다 놓기가 동작하지 않음'); }
+          if (await p.locator(`.qz-pool [data-chip="${ci}"]`).count()) { await p.click(`.qz-pool [data-chip="${ci}"]`); await p.click(`[data-tgbtn="${q.key[ci]}"]`); }
+        }
+        await p.click('#qzSubmit');
+      }
+      if (!(await p.locator('#qzFb.ok').count())) note(`${tag}퀴즈: 정답을 넣었는데 오답 처리됨 (${q.type})`);
+      await p.click('#qzNext');
+    }
+    if ((await p.locator('#quizBox .score-big').innerText()).replace(/\s/g, '') !== '10/10') note(tag + '퀴즈: 전부 정답인데 10점이 아님');
     // 표준용어 개요
     await p.click('#tab-overview');
     for (const chip of await p.locator('#mmFilters .chip').all()) await chip.click();
@@ -264,7 +309,13 @@ try {
       await p.click('#tab-hierarchy'); await run('계층 탐색');
       await p.click('#tab-interop'); await p.locator('.term').first().click(); await run('상호운용성');
       await p.click('#tab-records'); await p.locator('#recNote .phrase').first().click(); await p.locator('#recWork .opt').first().click(); await run('간호기록');
-      await p.click('#tab-quiz'); await run('퀴즈'); await p.click('#qzStart'); await p.locator('#quizBox .opt').last().click(); await run('퀴즈 문항');
+      await p.click('#tab-quiz'); await run('퀴즈'); await p.click('#qzStart');
+      for (let i = 0; i < 10; i++) {
+        const t = await p.evaluate(() => window.__dbg.QZ.list[window.__dbg.QZ.i].type);
+        if (await p.locator('.qz-pool [data-chip]').count()) { await p.locator('.qz-pool [data-chip]').first().click(); await p.locator('.tg-btn').first().click(); await p.locator('.qz-pool [data-chip]').first().click(); }
+        await run('퀴즈 문항 ' + t + '(응답 전)'); await answerAny(p); await run('퀴즈 문항 ' + t + '(응답 후)'); await p.click('#qzNext');
+      }
+      await run('퀴즈 결과');
       await p.click('#tab-overview'); await run('표준용어 개요');
       await p.click('#tab-verify'); await p.locator('[data-vst="mismatch"]').first().click(); await run('검증 미션');
       await p.click('#lockBtn'); await run('PIN 창'); await p.keyboard.press('Escape');
