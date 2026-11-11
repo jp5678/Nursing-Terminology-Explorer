@@ -5,6 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>분류체계와 임상용어체계 — 간호 표준용어 탐색기</title>
 <meta name="description" content="분류체계(KCD-9·ICD-10·ICD-11)와 임상용어체계(SNOMED CT·ICNP)를 비교하는 간호 표준용어 탐색기(Classification and Clinical Terminology in Nursing) — AI융합 간호정보학 '간호·의료 표준용어' 단원용 인터랙티브 학습 앱">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%231E3A8A'/%3E%3Cpath d='M13 7h6v6h6v6h-6v6h-6v-6H7v-6h6z' fill='%23fff'/%3E%3C/svg%3E">
+<script>/* 저장된 테마를 첫 화면 그리기 전에 적용 (다크 모드 사용자의 흰 화면 깜빡임 방지) */
+try { if (JSON.parse(localStorage.getItem('nte.theme.v1')) === 'dark') document.documentElement.dataset.theme = 'dark'; } catch (e) {}</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans+KR:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -25,7 +28,7 @@
   --text:#1F2937; --muted:#4E5665;
   --ok:#0F7A4F; --warn:#B45309; --danger:#B42318; --gold:#B45309;
   --ok-bg:#E9F5EE; --warn-bg:#FDF4E7; --danger-bg:#FCEDEC;
-  --b-kcd:#0E7470; --b-icd10:#4A4BA6; --b-icd11:#7A3E9D; --b-snomed:#9C4A12; --b-icnp:#A1336A;
+  --b-kcd:#0B6763; --b-icd10:#4A4BA6; --b-icd11:#7A3E9D; --b-snomed:#9C4A12; --b-icnp:#A1336A;
   --shadow:0 1px 2px rgba(16,24,40,.05);
   --shadow-lg:0 12px 32px rgba(16,24,40,.14);
   --radius:12px; --radius-sm:8px;
@@ -54,7 +57,6 @@
 html{-webkit-text-size-adjust:100%}
 body{margin:0;font-family:var(--f-body);background:var(--bg);color:var(--text);line-height:1.7;font-size:16px;letter-spacing:-.005em;
   padding-bottom:calc(var(--disclaimer-h) + 8px);min-height:100vh;overflow-x:hidden;-webkit-font-smoothing:antialiased}
-.bg-glow{display:none}
 h1,h2,h3,h4{font-family:var(--f-title);line-height:1.35;margin:0;font-weight:700;letter-spacing:-.01em}
 h2{font-size:1.4rem} h3{font-size:1.1rem;font-weight:600}
 p{margin:.4em 0}
@@ -111,8 +113,6 @@ main{max-width:1360px;margin:0 auto;padding:20px 24px 28px}
 .btn:hover{background:var(--primary-soft);border-color:var(--primary);color:var(--accent-text)}
 .btn.primary{background:var(--primary);color:var(--on-primary);border-color:var(--primary)}
 .btn.primary:hover{background:var(--primary-hover);border-color:var(--primary-hover);color:var(--on-primary)}
-.btn.gold{background:var(--warn);color:var(--on-warn);border-color:var(--warn)}
-.btn.gold:hover{background:var(--warn);color:var(--on-warn);filter:brightness(1.08)}
 .btn.danger{border-color:var(--danger);color:var(--danger)}
 .btn.danger:hover{background:var(--danger-bg);border-color:var(--danger);color:var(--danger)}
 .btn:disabled,.btn:disabled:hover{opacity:1;cursor:not-allowed;background:var(--surface-2);border-color:var(--border-strong);border-style:dashed;color:var(--disabled-text);filter:none}
@@ -154,6 +154,7 @@ label{font-size:.88rem;color:var(--muted);display:block;margin-bottom:4px}
 .result{width:100%;text-align:left;border:1px solid transparent;background:transparent;border-radius:8px;padding:8px 10px;cursor:pointer}
 .result:hover{background:var(--surface-2)}
 .result[aria-pressed="true"]{border-color:var(--primary);background:var(--primary-soft);box-shadow:inset 3px 0 0 var(--primary)}
+.result .t,.result .e{display:block}
 .result .t{font-weight:600;font-size:.92rem}
 .result .e{font-size:.86rem;color:var(--muted)}
 .result .codes{display:flex;gap:5px;margin-top:4px;flex-wrap:wrap;font-family:var(--f-mono);font-size:.8rem}
@@ -289,6 +290,7 @@ table.data tbody tr:hover{background:var(--surface-2)}
 .opt:hover{border-color:var(--primary);background:var(--surface-2)}
 .opt.correct{border-color:var(--ok);background:var(--ok-bg)}
 .opt.incorrect{border-color:var(--danger);background:var(--danger-bg)}
+.opt .ol{display:block}
 .opt .codes{font-family:var(--f-mono);font-size:.84rem;color:var(--muted)}
 .feedback{margin-top:10px;padding:10px 12px;border-radius:8px;font-size:.9rem}
 .feedback.ok{background:var(--ok-bg);border:1px solid color-mix(in srgb,var(--ok) 35%,transparent)}
@@ -332,7 +334,6 @@ table.data tbody tr:hover{background:var(--surface-2)}
 /* ---------- Admin ---------- */
 .admin-only{display:none!important}
 body.instructor .admin-only{display:inline-flex!important}
-body.instructor .admin-block{display:block!important}
 .form-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px}
 fieldset{border:1px solid var(--border);border-radius:8px;padding:10px 12px;margin:10px 0}
 legend{padding:0 6px;font-weight:600;font-size:.86rem}
@@ -383,7 +384,6 @@ legend{padding:0 6px;font-weight:600;font-size:.86rem}
 </head>
 <body>
 <a class="skip" href="#main">본문 바로가기</a>
-<div class="bg-glow" aria-hidden="true"></div>
 
 <header class="topbar">
   <a class="brand" id="homeLink" href="#" title="메인 화면(개념 검색·비교)으로 이동">
@@ -400,7 +400,7 @@ legend{padding:0 6px;font-weight:600;font-size:.86rem}
   </div>
 </header>
 
-<nav class="tabs" role="tablist" aria-label="학습 메뉴">
+<nav class="tabs" aria-label="학습 메뉴"><div role="tablist" aria-label="학습 메뉴" style="display:contents">
   <button class="tab" role="tab" id="tab-rosetta" aria-controls="panel-rosetta" aria-selected="true">🔍 개념 검색·비교</button>
   <button class="tab" role="tab" id="tab-hierarchy" aria-controls="panel-hierarchy" aria-selected="false" tabindex="-1">🌳 계층 탐색</button>
   <button class="tab" role="tab" id="tab-interop" aria-controls="panel-interop" aria-selected="false" tabindex="-1">🏥 상호운용성</button>
@@ -409,7 +409,7 @@ legend{padding:0 6px;font-weight:600;font-size:.86rem}
   <button class="tab" role="tab" id="tab-overview" aria-controls="panel-overview" aria-selected="false" tabindex="-1">📚 표준용어 개요</button>
   <button class="tab" role="tab" id="tab-verify" aria-controls="panel-verify" aria-selected="false" tabindex="-1">🔎 검증 미션</button>
   <button class="tab admin-tab" role="tab" id="tab-admin" aria-controls="panel-admin" aria-selected="false" tabindex="-1" hidden>🛠 교수자</button>
-</nav>
+</div></nav>
 
 <div id="storageNotice" class="notice" role="status" hidden>⚠ 이 브라우저에서는 저장소(localStorage)를 사용할 수 없습니다. 앱은 정상 작동하지만, 학습 진도·퀴즈 기록·교수자 편집 내용은 창을 닫으면 사라집니다. 편집 내용은 교수자 모드의 <b>JSON 내보내기</b>로 보관하세요.</div>
 
@@ -613,7 +613,7 @@ legend{padding:0 6px;font-weight:600;font-size:.86rem}
 </main>
 
 <footer class="credit">정종필 교수 · 청암대학교 간호학과</footer>
-<div class="disclaimer" role="note" aria-label="고지 문구"><span><b>고지</b> 본 앱은 교육용 학습도구입니다. 코드 정보는 학습 목적의 선별 자료이며 실제 의무기록·보험청구에는 국가데이터처(구 통계청) KCD 공식 자료 및 각 표준 관리기관의 원본을 사용하십시오.</span></div>
+<aside class="disclaimer" aria-label="고지 문구"><span><b>고지</b> 본 앱은 교육용 학습도구입니다. 코드 정보는 학습 목적의 선별 자료이며 실제 의무기록·보험청구에는 국가데이터처(구 통계청) KCD 공식 자료 및 각 표준 관리기관의 원본을 사용하십시오.</span></aside>
 <div id="modalRoot"></div>
 <div id="toast" role="status" aria-live="polite"></div>
 <script>
@@ -686,6 +686,9 @@ const $ = (s, el=document) => el.querySelector(s);
 const $$ = (s, el=document) => Array.from(el.querySelectorAll(s));
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const clone = o => JSON.parse(JSON.stringify(o));
+const pad2 = n => String(n).padStart(2, '0');
+const localDate = (d = new Date()) => `${d.getFullYear()}-${pad2(d.getMonth()+1)}-${pad2(d.getDate())}`;          // 현지 날짜 YYYY-MM-DD
+const localStamp = (d = new Date()) => `${localDate(d)} ${pad2(d.getHours())}:${pad2(d.getMinutes())}`;            // 현지 시각 YYYY-MM-DD HH:MM
 const shuffle = arr => { const a = arr.slice(); for (let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; } return a; };
 
 /* ---------- Safe storage (모든 read/write try/catch + 메모리 폴백) ---------- */
@@ -808,21 +811,24 @@ function searchConcepts(q){
   if (!qn) return DATA.slice().sort(byNameAsc);
   const choOnly = /^[ㄱ-ㅎ]+$/.test(qn);
   const scored = DATA.map(c => {
-    const fields = [c.concept_ko, c.concept_en, ...c.local_terms, c.kcd9.code, c.kcd9.name, c.icd10.code, c.icd10.name, c.icd11.code,
-                    c.snomed.id, c.snomed.fsn, c.snomed.pt, c.snomed.term_ko, c.icnp.code, c.icnp.name, c.icnp.suggested_name];
+    // 주 필드(개념명·로컬 용어)가 부가 필드(각 표준의 코드·명칭)보다 같은 조건에서 앞서도록 가산점 0.5
+    const primary = [c.concept_ko, c.concept_en, ...c.local_terms];
+    const fields = primary.concat([c.kcd9.code, c.kcd9.name, c.icd10.code, c.icd10.name, c.icd11.code, c.icd11.name,
+                    c.snomed.id, c.snomed.fsn, c.snomed.pt, c.snomed.term_ko, c.icnp.code, c.icnp.name, c.icnp.suggested_name]);
     let score = 0;
-    for (const f of fields){
-      if (!f) continue;
+    fields.forEach((f, i) => {
+      if (!f) return;
+      let sc = 0;
       if (choOnly){
         const fc = norm(chosung(f));
-        if (fc.startsWith(qn)) score = Math.max(score, 3); else if (fc.includes(qn)) score = Math.max(score, 2);
+        if (fc.startsWith(qn)) sc = 3; else if (fc.includes(qn)) sc = 2;
       } else {
         const fn = norm(f);
-        if (fn === qn) score = Math.max(score, 5);
-        else if (fn.startsWith(qn)) score = Math.max(score, 4);
-        else if (fn.includes(qn)) score = Math.max(score, 2);
+        if (fn === qn) sc = 5; else if (fn.startsWith(qn)) sc = 4; else if (fn.includes(qn)) sc = 2;
       }
-    }
+      if (sc && i < primary.length) sc += 0.5;
+      score = Math.max(score, sc);
+    });
     return { c, score };
   }).filter(x => x.score > 0);
   scored.sort((a,b) => b.score - a.score || byNameAsc(a.c, b.c));
@@ -949,9 +955,9 @@ function renderResults(){
   if (R.type !== '전체') list = list.filter(c => c.concept_type === R.type);
   $('#resultCount').textContent = `검색 결과 ${list.length}개` + (R.q ? ` · “${R.q}”` : '');
   $('#resultList').innerHTML = list.length ? list.map(c => `<li><button type="button" class="result" data-id="${esc(c.id)}" aria-pressed="${c.id===R.sel}">
-      <div class="t">${esc(c.concept_ko)} <span class="type-badge">${esc(c.concept_type)}</span></div>
-      <div class="e">${esc(c.concept_en)}</div>
-      <div class="codes"><span class="std kcd9">${esc(c.kcd9.code||'—')}</span><span class="std snomed">${esc(c.snomed.id||'—')}</span></div>
+      <span class="t">${esc(c.concept_ko)} <span class="type-badge">${esc(c.concept_type)}</span></span>
+      <span class="e">${esc(c.concept_en)}</span>
+      <span class="codes"><span class="std kcd9">${esc(c.kcd9.code||'—')}</span><span class="std snomed">${esc(c.snomed.id||'—')}</span></span>
     </button></li>`).join('') : `<li class="muted small">결과가 없습니다. 다른 표현(약어·영문·초성)으로 검색해 보세요.</li>`;
 }
 function emptyReason(c, k){
@@ -1040,7 +1046,6 @@ $('#conceptDetail').addEventListener('click', e => {
   const c = DATA.find(x => x.id === R.sel); if (!c) return;
   const k = b.dataset.verify;
   c[k].verified = !c[k].verified;
-  if (k === 'icd10' || k === 'kcd9') {} // 각 표준 독립 검증
   saveData(); renderDetail(); toast(`${STANDARDS[k].label} 검증 상태: ${c[k].verified ? '검증 완료' : '검증 필요'}`);
 });
 
@@ -1209,7 +1214,7 @@ function onTermActivate(termId){
   if (IO.map[termId]){ delete IO.map[termId]; IO.checked = false; IO.selected = null; $('#interopResult').innerHTML=''; renderInterop(); toast('매핑을 해제했습니다'); return; }
   IO.selected = IO.selected === termId ? null : termId;
   renderInterop();
-  if (IO.selected) { const tgt = $('#targets .target'); toast('이제 알맞은 표준코드 카드를 선택하세요'); if (tgt && document.activeElement && document.activeElement.classList.contains('term')) {} }
+  if (IO.selected) toast('이제 알맞은 표준코드 카드를 선택하세요');
   const again = $(`[data-term="${termId}"]`); if (again) again.focus();
 }
 $('#panel-interop').addEventListener('click', e => {
@@ -1249,12 +1254,12 @@ $('#interopCheck').addEventListener('click', () => {
     box.innerHTML = `<div class="success"><b>✅ 매핑 성공! 두 병원의 데이터가 표준코드 기준으로 통합되었습니다.</b>
       <p class="small">표준 없이 문자열로 합치면 <b>${INTEROP_TERMS.length}개</b>의 서로 다른 항목이 생기지만, 표준코드로 합치면 <b>${Object.keys(groups).length}개</b> 임상 개념으로 정확히 집계됩니다.</p></div>
       <div class="grid-2" style="margin-top:12px">
-        <div class="card anim-left"><h3>병원 A 원본 (환자 ${sumA}명)</h3><div class="table-scroll"><table class="data"><thead><tr><th>로컬 용어</th><th>환자 수</th></tr></thead><tbody>
+        <div class="card anim-left"><h3>병원 A 원본 (환자 ${sumA}명)</h3><div class="table-scroll" tabindex="0" role="group" aria-label="표 (스크롤 가능)"><table class="data"><thead><tr><th>로컬 용어</th><th>환자 수</th></tr></thead><tbody>
           ${INTEROP_TERMS.filter(t=>t.h==='A').sort(ioByTerm).map(t=>`<tr><td>${esc(t.term)}</td><td>${t.n}</td></tr>`).join('')}</tbody></table></div></div>
-        <div class="card anim-right"><h3>병원 B 원본 (환자 ${sumB}명)</h3><div class="table-scroll"><table class="data"><thead><tr><th>로컬 용어</th><th>환자 수</th></tr></thead><tbody>
+        <div class="card anim-right"><h3>병원 B 원본 (환자 ${sumB}명)</h3><div class="table-scroll" tabindex="0" role="group" aria-label="표 (스크롤 가능)"><table class="data"><thead><tr><th>로컬 용어</th><th>환자 수</th></tr></thead><tbody>
           ${INTEROP_TERMS.filter(t=>t.h==='B').sort(ioByTerm).map(t=>`<tr><td>${esc(t.term)}</td><td>${t.n}</td></tr>`).join('')}</tbody></table></div></div>
       </div>
-      <div class="card" style="margin-top:14px"><h3>⬇ 통합 테이블 (SNOMED CT 기준)</h3><div class="table-scroll"><table class="data">
+      <div class="card" style="margin-top:14px"><h3>⬇ 통합 테이블 (SNOMED CT 기준)</h3><div class="table-scroll" tabindex="0" role="group" aria-label="표 (스크롤 가능)"><table class="data">
         <thead><tr><th>SNOMED CT</th><th>개념</th><th>KCD</th><th>병원 A 원문</th><th>병원 B 원문</th><th>합계</th></tr></thead><tbody>
         ${Object.keys(groups).sort(ioByConcept).map((id,i) => { const c = ioConcept(id), g = groups[id]; const tot = [...g.A,...g.B].reduce((s,t)=>s+t.n,0);
           return `<tr class="anim-row" style="animation-delay:${0.7 + i*0.18}s"><td class="mono">${esc(c.snomed.id)}</td><td>${esc(c.concept_ko)}</td><td class="mono">${esc(c.kcd9.code||'—')}</td>
@@ -1379,7 +1384,7 @@ function renderRecNote(){
   }).join('')}</div>
   <p class="small muted" style="margin-top:8px">핵심 개념 ${Object.keys(r.items).length}개 중 <b>${Object.values(st.items).filter(x=>x.done).length}</b>개 코딩 완료</p>`;
 }
-function optLabel(c){ return `<div><b>${esc(c.concept_ko)}</b> <span class="small muted">${esc(c.concept_en)}</span></div><div class="codes">KCD ${esc(c.kcd9.code||'—')} · SNOMED CT ${esc(c.snomed.id||'—')}</div>`; }
+function optLabel(c){ return `<span class="ol"><b>${esc(c.concept_ko)}</b> <span class="small muted">${esc(c.concept_en)}</span></span><span class="ol codes">KCD ${esc(c.kcd9.code||'—')} · SNOMED CT ${esc(c.snomed.id||'—')}</span>`; }
 function renderRecWork(msg){
   const r = RECORDS.find(x => x.id === REC.cur); const st = recState(r.id);
   const k = REC.active;
@@ -1402,7 +1407,7 @@ function renderRecExtracted(){
   const r = RECORDS.find(x => x.id === REC.cur); const st = recState(r.id);
   const rows = Object.keys(r.items).filter(k => st.items[k] && st.items[k].done);
   const segs = parseRecord(r);
-  $('#recExtracted').innerHTML = rows.length ? `<div class="table-scroll"><table class="data"><thead><tr><th>원문 표현</th><th>표준 개념</th><th>유형</th><th>KCD-9</th><th>SNOMED CT</th><th>검증</th></tr></thead><tbody>
+  $('#recExtracted').innerHTML = rows.length ? `<div class="table-scroll" tabindex="0" role="group" aria-label="표 (스크롤 가능)"><table class="data"><thead><tr><th>원문 표현</th><th>표준 개념</th><th>유형</th><th>KCD-9</th><th>SNOMED CT</th><th>검증</th></tr></thead><tbody>
     ${rows.map(k => { const c = getConcept(r.items[k].c); const ph = segs.find(x=>x.key===k).phrase;
       return `<tr><td>${esc(ph)}</td><td>${esc(c.concept_ko)}</td><td class="mono small">${esc(c.concept_type)}</td><td class="mono">${esc(c.kcd9.code||'—')}</td><td class="mono">${esc(c.snomed.id)}</td><td>${verifiedBadge(c.kcd9.verified && c.snomed.verified)}</td></tr>`; }).join('')}
     </tbody></table></div>` : '<p class="muted small">아직 추출된 개념이 없습니다.</p>';
@@ -1516,7 +1521,7 @@ $('#quizBox').addEventListener('click', e => {
     QZ.i++; QZ.answered = false; QZ.pick = null;
     if (QZ.i >= QZ.list.length){
       QZ.mode = 'done';
-      const date = new Date().toISOString().slice(0,16).replace('T',' ');
+      const date = localStamp();
       quizStore.history.push({ date, score:QZ.score, total:QZ.list.length, retry:QZ.retry });
       if (quizStore.history.length > 30) quizStore.history = quizStore.history.slice(-30);
       if (!QZ.retry && QZ.list.length === 10) quizStore.best = Math.max(quizStore.best ?? 0, QZ.score);
@@ -1552,7 +1557,7 @@ function renderOverview(){
     <div class="filters" id="mmFilters" role="group" aria-label="불일치 유형 필터"></div>
     <div class="v-list" id="mmList"></div></div>
   <div class="card"><h3>표준별 비교표</h3>
-    <div class="table-scroll" style="margin-top:10px"><table class="data"><thead><tr><th>표준</th><th>성격</th><th>관리기관</th><th>목적</th><th>구조 특징</th><th>국내 활용</th></tr></thead><tbody>
+    <div class="table-scroll" tabindex="0" role="group" aria-label="표 (스크롤 가능)" style="margin-top:10px"><table class="data"><thead><tr><th>표준</th><th>성격</th><th>관리기관</th><th>목적</th><th>구조 특징</th><th>국내 활용</th></tr></thead><tbody>
       ${rows.map(r => `<tr><td><span class="std ${r[1]}">${r[0]}</span></td><td>${r[2]}</td><td>${r[3]}</td><td>${r[4]}</td><td>${r[5]}</td><td>${r[6]}</td></tr>`).join('')}
     </tbody></table></div>
     <p class="insight small">📌 <b>국내 ICD-11 이행</b>: 2031년경 이행 예정입니다. 다만 일정·방식은 정부 계획에 따라 <b>변경될 수 있으므로</b> 최신 공지를 확인하십시오.</p></div>
@@ -1743,7 +1748,7 @@ function downloadText(filename, text, mime){
     return true;
   } catch(err){ toast('파일 저장에 실패했습니다: ' + err.message); return false; }
 }
-function vFileBase(){ const who = (vState.student||'student').replace(/[^\w가-힣-]/g,'_').slice(0,30); return `verification_${who}_${new Date().toISOString().slice(0,10)}`; }
+function vFileBase(){ const who = (vState.student||'student').replace(/[^\w가-힣-]/g,'_').slice(0,30); return `verification_${who}_${localDate()}`; }
 $('#verifyBox').addEventListener('click', e => {
   const b = e.target.closest('button'); if (!b) return;
   if (b.dataset.vst){
@@ -1808,7 +1813,7 @@ function vAggregateHTML(){
   const tName = id => (getConcept(id.split('.')[0]) || {}).concept_ko || id;
   const tids = Object.keys(agg).sort((a,b) => koCmp(tName(a), tName(b)) || a.localeCompare(b));
   return `<p class="small muted">제출 ${vSubs.length}건 (${vSubs.map(s=>esc(s.student||'익명')).join(', ')}) · 과제 ${tids.length}개. <b>적용</b>은 해당 텍스트 필드만 바꾸며 verified 상태는 바꾸지 않습니다.</p>
-  <div class="table-scroll" style="margin-top:8px;max-height:460px"><table class="data"><thead><tr><th>과제</th><th>현재 앱 값</th><th>일치</th><th>불일치 제안값 (응답 수)</th><th>못 찾음</th><th>근거</th></tr></thead><tbody>
+  <div class="table-scroll" tabindex="0" role="group" aria-label="표 (스크롤 가능)" style="margin-top:8px;max-height:460px"><table class="data"><thead><tr><th>과제</th><th>현재 앱 값</th><th>일치</th><th>불일치 제안값 (응답 수)</th><th>못 찾음</th><th>근거</th></tr></thead><tbody>
   ${tids.map(id => { const a = agg[id]; const [cid, type] = id.split('.'); const c = getConcept(cid); const m = V_TYPES[type];
     if (!c || !m) return '';
     const cur = vAppValue(c, type);
@@ -1873,7 +1878,7 @@ function renderAdmin(){
       <button type="button" class="btn danger" id="adReset">내장 기본 데이터로 초기화</button>
     </div>
     <p class="small muted" style="margin-top:8px">현재 개념 ${DATA.length}개 · 편집 내용은 이 브라우저에만 저장됩니다. 다음 학기 재사용·동료 공유는 <b>JSON 내보내기</b>를 사용하세요.${Store.available() ? '' : ' <b style="color:var(--warn)">(저장소 차단 상태 — 새로고침 시 사라짐)</b>'}</p></div>
-  <div class="card"><h3>개념 목록</h3><div class="table-scroll" style="margin-top:8px;max-height:460px"><table class="data"><thead><tr><th>ID</th><th>개념</th><th>KCD</th><th>ICD-11</th><th>SNOMED</th><th>ICNP</th><th>검증</th><th>편집</th></tr></thead><tbody>
+  <div class="card"><h3>개념 목록</h3><div class="table-scroll" tabindex="0" role="group" aria-label="표 (스크롤 가능)" style="margin-top:8px;max-height:460px"><table class="data"><thead><tr><th>ID</th><th>개념</th><th>KCD</th><th>ICD-11</th><th>SNOMED</th><th>ICNP</th><th>검증</th><th>편집</th></tr></thead><tbody>
     ${DATA.slice().sort(byNameAsc).map(c => `<tr><td class="mono">${esc(c.id)}</td><td>${esc(c.concept_ko)}<div class="small muted">${esc(c.category)} · ${esc(c.concept_type)}</div></td>
       <td class="mono">${esc(c.kcd9.code||'—')}</td><td class="mono">${esc(c.icd11.code||'—')}</td><td class="mono">${esc(c.snomed.id||'—')}</td><td class="mono">${esc(c.icnp.code||'—')}</td>
       <td><span class="vbadge ${verifyCount(c)===5?'ver':'unv'}">${verifyCount(c)}/5</span></td>
@@ -1884,7 +1889,7 @@ function renderAdmin(){
     <button type="button" class="btn sm danger" id="adVClear" ${vSubs.length?'':'disabled'}>집계 초기화</button></div>
     <div style="margin-top:8px">${vAggregateHTML()}</div></div>
   <div class="card"><h3>⚠ 검증이 필요한 코드 (${unv.length})</h3><p class="small muted">코드는 있으나 verified:false인 항목입니다. 공식 원본으로 확인 후 편집 화면에서 체크하세요.</p>
-    <div class="table-scroll" style="margin-top:8px;max-height:360px"><table class="data"><thead><tr><th>ID</th><th>개념</th><th>표준</th><th>코드</th><th>명칭</th></tr></thead><tbody>
+    <div class="table-scroll" tabindex="0" role="group" aria-label="표 (스크롤 가능)" style="margin-top:8px;max-height:360px"><table class="data"><thead><tr><th>ID</th><th>개념</th><th>표준</th><th>코드</th><th>명칭</th></tr></thead><tbody>
     ${unv.map(x => `<tr><td class="mono">${esc(x.c.id)}</td><td>${esc(x.c.concept_ko)}</td><td><span class="std ${x.k}">${STANDARDS[x.k].label}</span></td><td class="mono">${esc(x.code)}</td><td class="small">${esc(x.k==='snomed' ? (x.c.snomed.fsn||x.c.snomed.pt) : x.c[x.k].name)}</td></tr>`).join('') || '<tr><td colspan="5">모두 검증되었습니다.</td></tr>'}
     </tbody></table></div>
     <p class="small muted" style="margin-top:8px">미입력: ICD-11 ${empty.filter(x=>x.k==='icd11').length}건, ICNP ${empty.filter(x=>x.k==='icnp').length}건</p></div>`;
@@ -1976,7 +1981,7 @@ $('#adminBox').addEventListener('click', e => {
     try {
       const blob = new Blob([JSON.stringify(payload, null, 2)], { type:'application/json' });
       const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
-      a.download = `nursing_terminology_data_${new Date().toISOString().slice(0,10)}.json`;
+      a.download = `nursing_terminology_data_${localDate()}.json`;
       document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 500);
       toast('JSON 파일을 내보냈습니다');
     } catch(err){ toast('내보내기에 실패했습니다: ' + err.message); }
@@ -2028,6 +2033,7 @@ $('#adminBox').addEventListener('change', e => {
       const arr = Array.isArray(parsed) ? parsed : (parsed && Array.isArray(parsed.data) ? parsed.data : null);
       if (!arr || !arr.length || !arr.every(validConcept)) throw new Error('개념 배열(id, concept_ko 필수) 형식이 아닙니다');
       const ids = arr.map(c=>c.id); if (new Set(ids).size !== ids.length) throw new Error('중복된 ID가 있습니다');
+      const badId = ids.find(id => !/^[\w-]+$/.test(id)); if (badId) throw new Error(`ID는 영문·숫자·_- 만 사용할 수 있습니다 (${badId})`);
       if (!window.confirm(`${arr.length}개 개념을 불러와 현재 데이터를 대체할까요?`)) return;
       DATA = arr.map(normalizeConcept); saveData(); renderAdmin(); toast(`${arr.length}개 개념을 불러왔습니다`);
     } catch(err){ toast('불러오기 실패: ' + err.message); }
