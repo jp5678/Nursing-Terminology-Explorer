@@ -2320,7 +2320,7 @@ $('#progressBtn').addEventListener('click', () => {
       return `<li class="pg-item${i.done ? ' done' : ''}">
         <div class="pg-top"><span aria-hidden="true">${ico}</span><span class="pg-label">${esc(i.label)}<span class="sr-only"> — ${st}</span></span><span class="pg-num">${i.cur}/${i.goal}${i.unit || ''}</span></div>
         <div class="pg-bar" aria-hidden="true"><i style="width:${i.cur / i.goal * 100}%"></i></div>
-        ${i.done ? '' : `<div class="pg-foot"><span class="small muted">${esc(i.hint)}</span><button type="button" class="btn sm" data-go="${i.tab}" aria-label="${esc(i.label)} — 해당 화면으로 이동">하러 가기 →</button></div>`}</li>`; }).join('')}</ul>
+        ${i.done ? '' : `<div class="pg-foot"><span class="small muted">${esc(i.hint)}</span><button type="button" class="btn sm" data-go="${i.tab}" aria-label="${esc(i.label)} — 해당 화면으로 이동">바로 가기 →</button></div>`}</li>`; }).join('')}</ul>
     <div class="row" style="margin-top:12px"><span class="small muted">퀴즈 점수와 검증 미션 판정은 각 탭의 “기록 초기화”로 지웁니다.</span><span class="spacer"></span><button type="button" class="btn sm danger" id="progReset">진도 초기화</button></div>`,
     onMount(back, close){
       back.addEventListener('click', e => { const g = e.target.closest('[data-go]'); if (g){ close(); activateTab(g.dataset.go, true); scrollToMain(); } });
