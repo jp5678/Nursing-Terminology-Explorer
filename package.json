@@ -1,7 +1,7 @@
 {
   "name": "nursing-terminology-explorer",
   "private": true,
-  "description": "분류체계와 임상용어체계 — 간호 표준용어 탐색기 (점검 도구용 설정. 앱 자체는 index.html 한 파일이며 설치가 필요 없습니다)",
+  "description": "간호 표준용어 탐색기 — 분류체계와 임상용어체계 (점검 도구용 설정. 앱 자체는 index.html 한 파일이며 설치가 필요 없습니다)",
   "type": "module",
   "scripts": {
     "check": "node tools/check_app.mjs",

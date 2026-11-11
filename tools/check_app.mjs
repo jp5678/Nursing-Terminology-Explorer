@@ -216,6 +216,14 @@ try {
     if (await p.locator('#vList .v-task').count() !== 5) note(tag + '검증 미션: 배정 과제 수가 5가 아님');
     for (let i = 0; i < 5; i++) await p.locator('#vList .v-task').nth(i).locator('[data-vst="mismatch"]').click();
     await p.locator('#vList input[data-vf="value"]').first().fill('점검용 값');
+    await p.click('#vExportDocx');
+    if (await p.evaluate(() => document.activeElement.id) !== 'vCls') note(tag + '검증 미션: 제출자 미입력 시 내보내기가 막히지 않음');
+    await p.fill('#vCls', 'A반'); await p.fill('#vSid', '20260000'); await p.fill('#vName', '점검'); await p.locator('#vName').press('Tab');
+    for (const [btn, ext] of [['#vExportJson', '.json'], ['#vExportCsv', '.csv'], ['#vExportDocx', '.docx']]) {
+      p.once('dialog', dlg => dlg.accept());
+      const dl = await Promise.all([p.waitForEvent('download', { timeout: 10000 }), p.click(btn)]).then(r => r[0]).catch(() => null);
+      if (!dl) note(`${tag}검증 미션: ${ext} 내보내기 실패`);
+    }
     await check('검증 미션'); await overflow('검증 미션'); await p.click('#vAll');
     // 교수자 모드
     await p.click('#lockBtn'); await p.fill('#pinInput', '0000'); await p.keyboard.press('Enter');
