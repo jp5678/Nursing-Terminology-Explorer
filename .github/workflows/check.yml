@@ -1,0 +1,28 @@
+# index.html 이 바뀔 때마다 앱 자동 점검(tools/check_app.mjs)을 실행합니다.
+name: 앱 자동 점검
+
+on:
+  pull_request:
+  push:
+    branches: [index]
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: 점검 도구 설치
+        run: npm install --no-audit --no-fund
+      - name: 브라우저 설치
+        run: npx playwright install --with-deps chromium
+      - name: 화면 목록 정렬 검사
+        run: node tools/verify_terminology.mjs --only order
+      - name: 앱 자동 점검 (데이터·구조·동작·접근성)
+        run: node tools/check_app.mjs
