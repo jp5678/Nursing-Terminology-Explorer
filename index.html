@@ -301,6 +301,21 @@ table.data tbody tr:hover{background:var(--surface-2)}
 .quiz-progress{height:6px;border-radius:99px;background:var(--surface-2);overflow:hidden;margin:8px 0 16px}
 .quiz-progress i{display:block;height:100%;background:var(--primary);transition:width .3s}
 .q-text{font-size:1.08rem;font-weight:600;margin:8px 0 4px}
+.opt[aria-pressed="true"]:not(.correct):not(.incorrect){border-color:var(--primary);background:var(--primary-soft);box-shadow:inset 3px 0 0 var(--primary)}
+.opt.missed{border-style:dashed}
+.qz-pool{display:flex;flex-wrap:wrap;gap:8px;align-items:center;min-height:52px;padding:10px;margin-top:8px;border:1px dashed var(--control-border);border-radius:8px}
+.qz-chip{border:1px solid var(--control-border);background:var(--surface);color:var(--text);border-radius:8px;padding:6px 11px;font-size:.92rem;font-family:inherit;cursor:grab;text-align:left}
+.qz-chip:hover{border-color:var(--primary)}
+.qz-chip[aria-pressed="true"]{border-color:var(--primary);background:var(--primary-soft);outline:2px solid var(--primary);outline-offset:1px}
+.qz-chip:disabled{cursor:default;color:var(--text);opacity:1}
+.qz-chip.right{border-color:var(--ok);background:var(--ok-bg)} .qz-chip.wrong{border-color:var(--danger);background:var(--danger-bg)}
+.qz-targets{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:8px;margin-top:10px}
+.qz-target{border:1px solid var(--border);border-radius:8px;padding:8px;background:var(--surface-2)}
+.qz-target.over,.qz-pool.over{border-color:var(--primary);border-style:solid;background:var(--primary-soft)}
+.tg-btn{display:block;width:100%;text-align:left;font-weight:600;font-size:.92rem;font-family:inherit;border:1px solid var(--control-border);background:var(--surface);color:var(--text);border-radius:6px;padding:7px 9px;cursor:pointer}
+.tg-btn:hover{border-color:var(--primary);background:var(--primary-soft)}
+.tg-btn:disabled{cursor:default;color:var(--text);opacity:1}
+.qz-target .drop{display:flex;flex-wrap:wrap;gap:6px;min-height:36px;margin-top:6px}
 .ox{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px}
 .ox .opt{text-align:center;font-size:1.8rem;font-weight:600;padding:16px;margin:0;font-family:var(--f-mono)}
 .score-big{font-family:var(--f-title);font-size:2.8rem;font-weight:700;color:var(--accent-text);line-height:1}
@@ -493,7 +508,7 @@ legend{padding:0 6px;font-weight:600;font-size:.86rem}
   <!-- 5. Quiz -->
   <section id="panel-quiz" role="tabpanel" aria-labelledby="tab-quiz" tabindex="0" hidden>
     <div class="panel-head">
-      <div><h2>퀴즈</h2><p>10문항(객관식 + O/X), 문항 순서 무작위. 점수와 오답은 이 브라우저에 저장됩니다.</p></div>
+      <div><h2>퀴즈</h2><p>문항 풀 50개 중 10문항을 무작위로 출제합니다. 형식은 O/X · 5지 선다 · 복수 선택 · 짝짓기 · 분류하기(끌어다 놓기)입니다. 점수와 오답은 이 브라우저에 저장됩니다.</p></div>
     </div>
     <div class="card" id="quizBox" aria-live="polite"></div>
   </section>
@@ -1446,50 +1461,136 @@ $('#recReset').addEventListener('click', () => { delete REC.state[REC.cur]; REC.
    ========================================================= */
 const QUIZ_POOL = [
   { id:'q1', type:'ox', q:'KCD(한국표준질병·사인분류)는 임상용어체계(terminology)가 아니라 분류체계(classification)이다.', a:'O', exp:'KCD는 ICD-10을 기반으로 한 통계·청구용 분류체계입니다. 임상 표현의 세밀함보다 상호배타적 범주화가 목적입니다.' },
-  { id:'q2', type:'mc', q:'SNOMED CT에 대한 설명으로 옳은 것은?', opts:['한 개념이 여러 부모(is-a)를 가질 수 있다','사망원인 통계 작성을 주목적으로 한다','세계보건기구(WHO)가 관리한다','질병만 표현하며 시술·소견은 표현하지 않는다'], a:0, exp:'SNOMED CT는 SNOMED International이 관리하는 임상용어체계로, 다중 부모(polyhierarchy)를 허용하고 질환·소견·절차·사건 등 임상 표현 전반을 다룹니다.' },
-  { id:'q3', type:'mc', q:'KCD 제9차 개정판(KCD-9)의 국내 시행 시기는?', opts:['2026년','2021년','2022년','2031년'], a:0, exp:'KCD-9은 2026년부터 시행되었습니다(KCD-8은 2021년). KCD는 대략 5년 주기로 개정됩니다.' },
+  { id:'q2', type:'mc', q:'SNOMED CT에 대한 설명으로 옳은 것은?', opts:['한 개념이 여러 부모(is-a)를 가질 수 있다','사망원인 통계 작성을 주목적으로 한다','세계보건기구(WHO)가 관리한다','질병만 표현하며 시술·소견은 표현하지 않는다','국제간호협의회(ICN)가 관리한다'], a:0, exp:'SNOMED CT는 SNOMED International이 관리하는 임상용어체계로, 다중 부모(polyhierarchy)를 허용하고 질환·소견·절차·사건 등 임상 표현 전반을 다룹니다.' },
+  { id:'q3', type:'mc', q:'KCD 제9차 개정판(KCD-9)의 국내 시행 시기는?', opts:['2026년','2021년','2022년','2031년','2016년'], a:0, exp:'KCD-9은 2026년부터 시행되었습니다(KCD-8은 2021년). KCD는 대략 5년 주기로 개정됩니다.' },
   { id:'q4', type:'ox', q:'ICD-11은 2022년 1월 1일 WHO에서 공식 발효되었다.', a:'O', exp:'ICD-11은 2019년 세계보건총회에서 채택되어 2022년 1월 1일 발효되었습니다.' },
-  { id:'q5', type:'mc', q:'국내 ICD-11 이행에 대한 설명으로 가장 적절한 것은?', opts:['2031년경 이행을 목표로 하며 계획은 변경될 수 있다','2022년부터 모든 의료기관이 ICD-11로 청구한다','국내는 ICD-11을 도입하지 않기로 결정했다','KCD-9이 곧 ICD-11이다'], a:0, exp:'국내는 2031년경 ICD-11 이행을 예정하고 있으나 계획은 변경될 수 있습니다. KCD-9은 여전히 ICD-10 기반입니다.' },
-  { id:'q6', type:'mc', q:'KCD/ICD-10 코드 “I10”에 해당하는 개념은?', opts:['본태성 고혈압','급성 심근경색','심부전','뇌경색'], a:0, exp:'I10은 본태성(원발성) 고혈압입니다. 급성 심근경색 I21, 심부전 I50, 뇌경색 I63.' },
-  { id:'q7', type:'mc', q:'다음 중 ICD-10(WHO)에는 대응 범주가 없지만 SNOMED CT로는 표현할 수 있는 간호 개념은?', opts:['유치도뇨관 삽입','폐렴','본태성 고혈압','천식'], a:0, exp:'유치도뇨관 삽입은 procedure입니다. 질병 분류인 ICD에는 자리가 없고 SNOMED CT 446583004로 표현합니다.' },
+  { id:'q5', type:'mc', q:'국내 ICD-11 이행에 대한 설명으로 가장 적절한 것은?', opts:['2031년경 이행을 목표로 하며 계획은 변경될 수 있다','2022년부터 모든 의료기관이 ICD-11로 청구한다','국내는 ICD-11을 도입하지 않기로 결정했다','KCD-9이 곧 ICD-11이다','2026년 KCD-9 시행과 함께 ICD-11로 전환했다'], a:0, exp:'국내는 2031년경 ICD-11 이행을 예정하고 있으나 계획은 변경될 수 있습니다. KCD-9은 여전히 ICD-10 기반입니다.' },
+  { id:'q6', type:'mc', q:'KCD/ICD-10 코드 “I10”에 해당하는 개념은?', opts:['본태성 고혈압','급성 심근경색','심부전','뇌경색','심방세동'], a:0, exp:'I10은 본태성(원발성) 고혈압입니다. 급성 심근경색 I21, 심부전 I50, 뇌경색 I63.' },
+  { id:'q7', type:'mc', q:'다음 중 ICD-10(WHO)에는 대응 범주가 없지만 SNOMED CT로는 표현할 수 있는 간호 개념은?', opts:['유치도뇨관 삽입','폐렴','본태성 고혈압','천식','변비'], a:0, exp:'유치도뇨관 삽입은 procedure입니다. 질병 분류인 ICD에는 자리가 없고 SNOMED CT 446583004로 표현합니다.' },
   { id:'q8', type:'ox', q:'ICNP는 세계보건기구(WHO)가 개발·관리하는 간호용어체계이다.', a:'X', exp:'ICNP는 국제간호협의회(ICN)가 개발·관리합니다.' },
-  { id:'q9', type:'mc', q:'한국이 SNOMED International 회원국으로 가입한 연도는?', opts:['2020년','2010년','2016년','2024년'], a:0, exp:'한국은 2020년 SNOMED International 회원국으로 가입했습니다.' },
-  { id:'q10', type:'mc', q:'병원 A는 “DM”, 병원 B는 “당뇨병(2형)”으로 기록했다. 표준코드 매핑 없이 데이터를 합칠 때 생기는 문제로 가장 적절한 것은?', opts:['같은 질환이 서로 다른 항목으로 집계되어 통계와 의사결정지원이 왜곡된다','자동으로 같은 질환으로 인식되므로 문제없다','환자 개인정보가 자동으로 익명화된다','보험청구 금액이 자동으로 증가한다'], a:0, exp:'표준코드가 없으면 시스템은 문자열이 다른 두 항목을 다른 개념으로 처리합니다. 이것이 상호운용성 문제의 핵심입니다.' },
+  { id:'q9', type:'mc', q:'한국이 SNOMED International 회원국으로 가입한 연도는?', opts:['2020년','2010년','2016년','2024년','2022년'], a:0, exp:'한국은 2020년 SNOMED International 회원국으로 가입했습니다.' },
+  { id:'q10', type:'mc', q:'병원 A는 “DM”, 병원 B는 “당뇨병(2형)”으로 기록했다. 표준코드 매핑 없이 데이터를 합칠 때 생기는 문제로 가장 적절한 것은?', opts:['같은 질환이 서로 다른 항목으로 집계되어 통계와 의사결정지원이 왜곡된다','자동으로 같은 질환으로 인식되므로 문제없다','환자 개인정보가 자동으로 익명화된다','보험청구 금액이 자동으로 증가한다','두 병원의 기록이 자동으로 삭제된다'], a:0, exp:'표준코드가 없으면 시스템은 문자열이 다른 두 항목을 다른 개념으로 처리합니다. 이것이 상호운용성 문제의 핵심입니다.' },
   { id:'q11', type:'ox', q:'분류체계에서는 상호배타성 원칙에 따라 하나의 질병이 원칙적으로 한 범주에만 분류된다.', a:'O', exp:'분류체계는 통계 집계를 위해 중복 없이 한 범주에 배정합니다. 반면 SNOMED CT는 다중 부모를 허용합니다.' },
-  { id:'q12', type:'mc', q:'SNOMED CT 개념의 FSN “Diabetes mellitus type 2 (disorder)”에서 괄호 안 “disorder”의 의미는?', opts:['개념이 속한 계층을 나타내는 의미 태그(semantic tag)','ICD-10 장 번호','코드 검증 여부','한국어 번역 여부'], a:0, exp:'FSN 끝의 괄호는 의미 태그로, disorder·finding·procedure·event 등 개념의 계층을 나타냅니다.' },
+  { id:'q12', type:'mc', q:'SNOMED CT 개념의 FSN “Diabetes mellitus type 2 (disorder)”에서 괄호 안 “disorder”의 의미는?', opts:['개념이 속한 계층을 나타내는 의미 태그(semantic tag)','ICD-10 장 번호','코드 검증 여부','한국어 번역 여부','SNOMED CT 릴리스 연도'], a:0, exp:'FSN 끝의 괄호는 의미 태그로, disorder·finding·procedure·event 등 개념의 계층을 나타냅니다.' },
   { id:'q13', type:'ox', q:'ICD-10 범주 “R11”은 오심과 구토를 하나의 범주로 묶어 분류한다.', a:'O', exp:'ICD-10 R11은 “Nausea and vomiting(구역 및 구토)”입니다. SNOMED CT는 오심(422587007)을 독립 개념으로 표현합니다.' },
-  { id:'q14', type:'mc', q:'감기(Common cold)와 로컬 용어 “URI(상기도감염)”의 관계로 옳은 것은?', opts:['감기는 상기도감염의 하위 개념이다','두 용어는 완전히 같은 개념이다','상기도감염이 감기의 하위 개념이다','두 개념은 서로 관련이 없다'], a:0, exp:'SNOMED CT에서 감기(82272006) ⊂ 바이러스성 상기도감염(281794004) ⊂ 상기도감염(54150009)입니다. “URI”를 감기로 매핑하면 과잉 해석, 감기를 URI로 매핑하면 구체성 손실입니다.' },
-  { id:'q15', type:'mc', q:'신속항원검사로 인플루엔자 바이러스가 확인된 환자의 ICD-10 분류에 대한 설명으로 가장 적절한 것은?', opts:['바이러스 미확인 범주(J11)가 아니라 확인된 경우의 범주(J10 계열)로 분류한다','검사 결과와 관계없이 항상 J11로 분류한다','감기(J00)로 분류한다','ICD는 인플루엔자를 분류하지 않는다'], a:0, exp:'ICD-10은 바이러스 확인 여부에 따라 인플루엔자를 J09–J11로 나눕니다. 같은 SNOMED 개념(6142004)이라도 맥락에 따라 ICD 코드가 달라집니다. 실제 코딩은 KCD 지침을 확인하세요.' },
+  { id:'q14', type:'mc', q:'감기(Common cold)와 로컬 용어 “URI(상기도감염)”의 관계로 옳은 것은?', opts:['감기는 상기도감염의 하위 개념이다','두 용어는 완전히 같은 개념이다','상기도감염이 감기의 하위 개념이다','두 개념은 서로 관련이 없다','감기는 상기도감염과 하기도감염을 모두 포함하는 상위 개념이다'], a:0, exp:'SNOMED CT에서 감기(82272006) ⊂ 바이러스성 상기도감염(281794004) ⊂ 상기도감염(54150009)입니다. “URI”를 감기로 매핑하면 과잉 해석, 감기를 URI로 매핑하면 구체성 손실입니다.' },
+  { id:'q15', type:'mc', q:'신속항원검사로 인플루엔자 바이러스가 확인된 환자의 ICD-10 분류에 대한 설명으로 가장 적절한 것은?', opts:['바이러스 미확인 범주(J11)가 아니라 확인된 경우의 범주(J10 계열)로 분류한다','검사 결과와 관계없이 항상 J11로 분류한다','감기(J00)로 분류한다','ICD는 인플루엔자를 분류하지 않는다','바이러스가 확인되면 ICD 코드를 부여하지 않는다'], a:0, exp:'ICD-10은 바이러스 확인 여부에 따라 인플루엔자를 J09–J11로 나눕니다. 같은 SNOMED 개념(6142004)이라도 맥락에 따라 ICD 코드가 달라집니다. 실제 코딩은 KCD 지침을 확인하세요.' },
   { id:'q16', type:'ox', q:'변비(constipation)는 ICD-10에서 증상·징후 장(R00–R99)에 분류된다.', a:'X', exp:'변비는 ICD-10에서 소화계통 질환 장(XI장)의 K59.0입니다. SNOMED CT에서는 소견(finding)으로 표현되어, 같은 개념이 체계마다 다른 자리에 놓입니다.' },
-  { id:'q17', type:'mc', q:'SNOMED CT 코드 69776003이 나타내는 개념은?', opts:['급성 위장염','급성 위염','위식도역류병','오심'], a:0, exp:'69776003은 Acute gastroenteritis(급성 위장염)입니다. 이름이 비슷한 급성 위염은 25458004로 다른 개념입니다. 코드는 기억이 아니라 원본으로 확인해야 합니다.' },
-  { id:'q18', type:'mc', q:'로컬 기록의 “CRF(만성신부전)”를 현재 표준 개념으로 매핑할 때 가장 적절한 것은?', opts:['만성 콩팥병 (SNOMED CT 709044004)','요로감염 (68566005)','심부전 (84114007)','저혈당 (302866003)'], a:0, exp:'“만성신부전”은 과거 용어로, 현재는 “만성 콩팥병(CKD)”이 표준입니다. 로컬 용어 정규화의 대표 사례입니다.' },
-  { id:'q19', type:'ox', q:'SNOMED CT의 “우울장애(Depressive disorder)”는 ICD-10의 F32 “우울 에피소드”와 항상 1:1로 대응한다.', a:'X', exp:'SNOMED CT의 우울장애는 더 넓은 개념이라 상황에 따라 F32, F33(재발성 우울장애) 등 여러 ICD 범주로 갈 수 있습니다. 표준 간 매핑은 1:1이 아닐 수 있습니다.' }
+  { id:'q17', type:'mc', q:'SNOMED CT 코드 69776003이 나타내는 개념은?', opts:['급성 위장염','급성 위염','위식도역류병','오심','변비'], a:0, exp:'69776003은 Acute gastroenteritis(급성 위장염)입니다. 이름이 비슷한 급성 위염은 25458004로 다른 개념입니다. 코드는 기억이 아니라 원본으로 확인해야 합니다.' },
+  { id:'q18', type:'mc', q:'로컬 기록의 “CRF(만성신부전)”를 현재 표준 개념으로 매핑할 때 가장 적절한 것은?', opts:['만성 콩팥병 (SNOMED CT 709044004)','요로감염 (68566005)','심부전 (84114007)','저혈당 (302866003)','만성폐쇄성폐질환 (13645005)'], a:0, exp:'“만성신부전”은 과거 용어로, 현재는 “만성 콩팥병(CKD)”이 표준입니다. 로컬 용어 정규화의 대표 사례입니다.' },
+  { id:'q19', type:'ox', q:'SNOMED CT의 “우울장애(Depressive disorder)”는 ICD-10의 F32 “우울 에피소드”와 항상 1:1로 대응한다.', a:'X', exp:'SNOMED CT의 우울장애는 더 넓은 개념이라 상황에 따라 F32, F33(재발성 우울장애) 등 여러 ICD 범주로 갈 수 있습니다. 표준 간 매핑은 1:1이 아닐 수 있습니다.' },
+  /* ---- O/X ---- */
+  { id:'q20', type:'ox', q:'ICD-11은 ICD-10과 코드 형식이 같아서, 2형 당뇨병은 ICD-11에서도 E11이다.', a:'X', exp:'ICD-11은 코드 체계가 완전히 다릅니다. 2형 당뇨병은 ICD-10에서 E11, ICD-11에서 5A11입니다. 그래서 ICD-11 이행 때는 대규모 매핑이 필요합니다.' },
+  { id:'q21', type:'ox', q:'“낙상 위험 증가”처럼 아직 일어나지 않은 위험 상태도 WHO ICD-10에 대응 범주가 있다.', a:'X', exp:'위험 상태는 질병이 아니어서 ICD-10에 대응 범주가 없습니다. SNOMED CT는 129839007(At increased risk for falls)로 표현합니다.' },
+  { id:'q22', type:'ox', q:'ICD-11 클러스터 코딩에서 슬래시(/)는 스템코드와 스템코드를 연결한다.', a:'O', exp:'WHO ICD-11 Reference Guide에 따르면 스템코드 사이는 /, 스템코드와 확장코드 사이는 &로 연결합니다.' },
+  { id:'q23', type:'ox', q:'ICD-11 클러스터에서 확장코드는 맨 앞자리에 올 수 없고, 통계 목적으로는 스템코드 없이 쓸 수 없다.', a:'O', exp:'확장코드는 스템코드에 세부 정보를 덧붙이는 용도입니다. 클러스터의 첫 자리는 항상 스템코드입니다.' },
+  { id:'q24', type:'ox', q:'SNOMED CT 개념 ID는 계층 위치를 담은 번호라서, 숫자만 보고도 상위 개념을 알 수 있다.', a:'X', exp:'SNOMED CT 개념 ID는 의미 없는 식별자입니다. 상하위 관계는 번호가 아니라 is-a 관계로 표현합니다. ICD 코드가 장·블록 구조를 반영하는 것과 대조됩니다.' },
+  { id:'q25', type:'ox', q:'ICNP의 최신 내용은 지금도 SNOMED CT와 별개인 단독 제품으로만 배포된다.', a:'X', exp:'ICNP는 SNOMED CT 안에서 관리되며, 단독 배포는 2019 릴리스까지였습니다. ICN의 ICNP Browser는 그때까지의 레거시 자료입니다.' },
+  { id:'q26', type:'ox', q:'HL7 FHIR로 데이터 형식만 맞추면, 병원마다 로컬 용어를 써도 의미적 상호운용성이 확보된다.', a:'X', exp:'FHIR는 형식(구문)을 맞춥니다. 내용에 “DM”, “당뇨” 같은 로컬 용어가 들어 있으면 수신 시스템은 같은 개념으로 인식하지 못합니다.' },
+  { id:'q27', type:'ox', q:'SNOMED CT의 옛 개념 Pressure ulcer(399912005)는 현재 비활성이며, 욕창은 Pressure injury(1163215007)로 표현한다.', a:'O', exp:'표준용어는 계속 개정됩니다. 비활성 개념이 생기므로, 코드는 기억이 아니라 최신 공식 원본으로 확인해야 합니다.' },
+  /* ---- 5지 선다 ---- */
+  { id:'q28', type:'mc', q:'2형 당뇨병의 ICD-11 코드는?', opts:['5A11','E11','BA00','44054006','CA40'], a:0, exp:'ICD-11에서 2형 당뇨병은 5A11입니다. E11은 KCD·ICD-10 코드, BA00은 ICD-11의 본태성 고혈압, CA40은 ICD-11의 폐렴, 44054006은 SNOMED CT 개념 ID입니다.' },
+  { id:'q29', type:'mc', q:'ICD-11 클러스터 코딩에서 스템코드에 확장코드를 붙일 때 쓰는 기호는?', opts:['& (앰퍼샌드)','/ (슬래시)','+ (더하기)',': (콜론)','- (하이픈)'], a:0, exp:'스템코드와 확장코드는 &로 연결합니다(예: BA41.0&XA7RE3). 슬래시(/)는 스템코드끼리 연결할 때 씁니다.' },
+  { id:'q30', type:'mc', q:'ICD-11에서 통계를 위해 범주가 상호배타적이고 부모가 하나뿐이도록 만든 것은?', opts:['MMS(사망·질병이환 통계용 목록)','Foundation(파운데이션)','확장코드 장(X장)','FHIR CodeableConcept','ICNP 7축 모형'], a:0, exp:'Foundation은 다중 부모를 허용하는 바탕 구조이고, MMS는 거기서 뽑아 낸 통계용 목록으로 각 범주가 한 자리에만 속합니다.' },
+  { id:'q31', type:'mc', q:'ICNP의 7축 모형(초점·판단·행위·수단·위치·대상자·시간)에 대한 설명으로 옳은 것은?', opts:['후조합용 레거시 표현으로, SNOMED CT 통합 뒤 폐기 예정이다','ICNP에서 유일하게 허용되는 현행 기록 방식이다','세계보건기구가 ICD-11에 도입한 구조이다','SNOMED CT의 최상위 계층 이름이다','KCD-9에서 간호진단을 분류하는 장의 이름이다'], a:0, exp:'국제간호협의회(ICN)는 7축 모형 같은 레거시 표현을 폐기할 예정이라고 밝혔습니다. 실무의 중심은 ISO 18104에 맞춘 사전조합 간호진단·중재 진술입니다.' },
+  { id:'q32', type:'mc', q:'HL7 FHIR에서 하나의 임상 개념에 여러 표준 코드(예: SNOMED CT와 ICD-10)를 함께 담는 데이터 형식은?', opts:['CodeableConcept','Patient','Bundle','Narrative','Identifier'], a:0, exp:'CodeableConcept는 coding 배열에 여러 코드체계의 코드를 나란히 담고, text에 원문 표현을 둡니다.' },
+  /* ---- 복수 선택 (해당하는 것을 모두 고르기) ---- */
+  { id:'q33', type:'multi', q:'ICD-11에 대한 설명으로 옳은 것을 모두 고르세요.', opts:['2022년 1월 1일 WHO에서 발효되었다','스템코드에 확장코드를 붙이는 후조합을 지원한다','세계보건기구(WHO)가 관리한다','KCD-9과 코드 형식이 같다','국내 모든 의료기관이 2022년부터 사용하고 있다'], a:[0,1,2], exp:'ICD-11은 WHO가 관리하며 2022.1.1 발효되었고 후조합(클러스터 코딩)을 지원합니다. 코드 형식은 KCD-9(ICD-10 기반)과 다르고, 국내 이행은 2031년경 예정입니다.' },
+  { id:'q34', type:'multi', q:'SNOMED CT에 대한 설명으로 옳은 것을 모두 고르세요.', opts:['한 개념이 여러 부모(is-a)를 가질 수 있다','SNOMED International이 관리한다','질환뿐 아니라 소견·절차·사건도 표현한다','세계보건기구(WHO)가 관리한다','통계 집계를 위한 상호배타적 범주가 주목적이다'], a:[0,1,2], exp:'SNOMED CT는 SNOMED International이 관리하는 임상용어체계입니다. 다중 부모를 허용하고 임상 표현 전반을 다룹니다. 상호배타적 범주는 분류체계(KCD·ICD)의 특징입니다.' },
+  { id:'q35', type:'multi', q:'KCD·ICD-10 코드와 개념이 바르게 짝지어진 것을 모두 고르세요.', opts:['I10 — 본태성 고혈압','J45 — 천식','N18 — 만성 콩팥병','F05 — 치매','R52 — 발열'], a:[0,1,2], exp:'F05는 섬망(치매는 F03), R52는 통증(발열은 R50.9)입니다.' },
+  { id:'q36', type:'multi', q:'KCD·ICD-10의 증상·징후 장(XVIII장, R코드)에 분류되는 개념을 모두 고르세요.', opts:['통증','발열','호흡곤란','변비','섬망'], a:[0,1,2], exp:'통증 R52, 발열 R50.9, 호흡곤란 R06.0은 XVIII장입니다. 변비(K59.0)는 소화계통(XI장), 섬망(F05)은 정신 및 행동 장애(V장)에 분류됩니다.' },
+  { id:'q37', type:'multi', q:'SNOMED CT에서 직접 부모(is-a)가 2개 이상인 다중 부모 개념을 모두 고르세요. (2026-11 International 릴리스 기준)', opts:['심방세동','패혈증','폐렴','2형 당뇨병','천식'], a:[0,1,2], exp:'심방세동과 패혈증은 부모가 3개, 폐렴은 2개입니다. 2형 당뇨병과 천식은 부모가 1개입니다. 계층 탐색 탭에서 직접 확인해 보세요.' },
+  { id:'q38', type:'multi', q:'표준코드 없이 로컬 용어로만 기록할 때 생기는 문제를 모두 고르세요.', opts:['같은 질환이 기관마다 다르게 집계되어 통계가 왜곡된다','임상의사결정지원(CDS) 규칙이 다른 표현을 인식하지 못한다','다기관 연구에서 데이터를 수작업으로 정제해야 한다','환자 개인정보가 자동으로 익명화된다','기록 용량이 줄어 저장 비용이 절감된다'], a:[0,1,2], exp:'로컬 용어는 통계 왜곡, CDS 실패, 데이터 통합 비용 증가로 이어집니다. 익명화나 저장 비용과는 관계가 없습니다.' },
+  /* ---- 짝짓기 ---- */
+  { id:'q39', type:'match', q:'각 표준과 관리기관을 짝지으세요.', pairs:[['KCD','국가데이터처 (구 통계청)'],['ICD-11','세계보건기구(WHO)'],['SNOMED CT','SNOMED International'],['ICNP','국제간호협의회(ICN)']], exp:'KCD는 국가데이터처, ICD는 WHO, SNOMED CT는 SNOMED International, ICNP는 ICN이 관리합니다.' },
+  { id:'q40', type:'match', q:'각 개념과 KCD 코드를 짝지으세요.', pairs:[['2형 당뇨병','E11'],['본태성 고혈압','I10'],['폐렴','J18'],['패혈증','A41']], exp:'KCD 코드의 첫 글자는 장을 반영합니다. E 내분비, I 순환계통, J 호흡계통, A 감염성 질환.' },
+  { id:'q41', type:'match', q:'각 개념과 SNOMED CT의 유형(의미 태그)을 짝지으세요.', pairs:[['심부전','질환 (disorder)'],['발열','소견 (finding)'],['유치도뇨관 삽입','절차 (procedure)'],['낙상','사건 (event)']], exp:'SNOMED CT는 질환뿐 아니라 소견·절차·사건까지 표현합니다. FSN 끝의 괄호가 의미 태그입니다.' },
+  { id:'q42', type:'match', q:'2형 당뇨병을 나타내는 각 코드와 그 코드가 속한 표준을 짝지으세요.', pairs:[['E11','KCD-9 · ICD-10'],['5A11','ICD-11'],['44054006','SNOMED CT']], exp:'같은 개념이라도 표준마다 코드가 다릅니다. FHIR CodeableConcept는 이 코드들을 한 개념에 함께 담습니다.' },
+  { id:'q43', type:'match', q:'각 연도와 그해의 사건을 짝지으세요.', pairs:[['2020년','한국, SNOMED International 회원국 가입'],['2021년','KCD-8 시행'],['2022년','ICD-11 WHO 발효'],['2026년','KCD-9 시행']], exp:'표준용어 개요 탭의 연표에서 확인할 수 있습니다.' },
+  { id:'q44', type:'match', q:'각 로컬 약어와 표준 개념을 짝지으세요.', pairs:[['HTN','본태성 고혈압'],['CKD','만성 콩팥병'],['IDA','철결핍성 빈혈'],['SOB','호흡곤란']], exp:'HTN = hypertension, CKD = chronic kidney disease, IDA = iron deficiency anemia, SOB = shortness of breath. 로컬 약어를 표준 개념으로 정규화해야 데이터가 통합됩니다.' },
+  /* ---- 분류하기 (끌어다 놓기) ---- */
+  { id:'q45', type:'bin', q:'각 표준을 성격에 맞는 칸에 넣으세요.', bins:['분류체계 (Classification)','임상용어체계 (Terminology)'], items:[['KCD-9',0],['ICD-10',0],['ICD-11',0],['SNOMED CT',1],['ICNP',1]], exp:'KCD·ICD는 통계·청구를 위한 분류체계, SNOMED CT·ICNP는 기록·교환을 위한 임상용어체계입니다.' },
+  { id:'q46', type:'bin', q:'각 개념을 SNOMED CT 유형에 맞는 칸에 넣으세요.', bins:['질환 (disorder)','소견 (finding)','절차 (procedure)'], items:[['폐렴',0],['심부전',0],['통증',1],['호흡곤란',1],['혈당 측정',2],['침상 체위변경',2]], exp:'질병은 disorder, 증상·징후는 finding, 간호행위·검사는 procedure 계층에 속합니다.' },
+  { id:'q47', type:'bin', q:'각 개념을 KCD·ICD-10의 해당 장에 넣으세요.', bins:['IX 순환계통의 질환','X 호흡계통의 질환','XVIII 증상·징후'], items:[['심부전 (I50)',0],['뇌경색 (I63)',0],['천식 (J45)',1],['폐렴 (J18)',1],['발열 (R50.9)',2],['두통 (R51)',2]], exp:'코드의 첫 글자가 장을 알려 줍니다. 뇌경색은 신경계통이 아니라 순환계통(IX장)에 분류되는 점에 주의하세요.' },
+  { id:'q48', type:'bin', q:'각 개념이 WHO ICD-10에 코드가 있는지에 따라 나누세요.', bins:['ICD-10에 코드가 있다','ICD-10에 대응 범주가 없다'], items:[['폐렴',0],['변비',0],['낙상',0],['유치도뇨관 삽입',1],['낙상 위험 증가',1],['혈당 측정',1]], exp:'ICD는 질병·사인 분류입니다. 낙상은 외인 코드(W19)가 있지만, 간호행위(절차)와 위험 상태는 대응 범주가 없습니다. SNOMED CT는 이들도 표현합니다.' },
+  { id:'q49', type:'bin', q:'각 표현을 로컬 용어와 표준 개념명으로 나누세요.', bins:['로컬 용어·약어','표준 개념명'], items:[['DM',0],['HTN',0],['CRF',0],['2형 당뇨병',1],['본태성 고혈압',1],['만성 콩팥병',1]], exp:'DM·HTN·CRF는 현장에서 쓰는 약어입니다. 표준 개념명과 코드로 매핑해야 시스템이 같은 개념으로 인식합니다.' },
+  { id:'q50', type:'bin', q:'각 특징을 분류체계와 임상용어체계 중 알맞은 칸에 넣으세요.', bins:['분류체계의 특징','임상용어체계의 특징'], items:[['상호배타적 범주',0],['“기타”·“상세불명” 범주가 있다',0],['통계·청구가 목적',0],['다중 부모(is-a) 허용',1],['개념 간 관계로 의미를 표현',1],['임상 기록·상호운용성이 목적',1]], exp:'분류는 중복 없이 묶어 세는 것이, 용어는 임상 의미를 세밀하게 표현하는 것이 목적입니다.' }
 ];
 const QZ_DEFAULT = { history:[], wrong:[], best:null };
 let quizStore = Object.assign(clone(QZ_DEFAULT), Store.get(KEYS.quiz, {}) || {});
 if (!Array.isArray(quizStore.history)) quizStore.history = [];
 if (!Array.isArray(quizStore.wrong)) quizStore.wrong = [];
-const QZ = { mode:'idle', list:[], i:0, score:0, answered:false, wrongNow:[], retry:false };
+const QZ = { mode:'idle', list:[], i:0, score:0, answered:false, wrongNow:[], retry:false, pick:null, multi:[], place:{}, sel:null };
+/* 문항 형식. mc 는 반드시 5지(4지 선다는 쓰지 않음). match·bin 은 카드를 칸에 놓는 방식(끌어다 놓기 또는 카드 선택 후 칸 선택) */
+const QZ_TYPE = { ox:'O/X', mc:'5지 선다', multi:'복수 선택', match:'짝짓기', bin:'분류하기' };
+const QZ_HINT = {
+  multi:'해당하는 보기를 <b>모두</b> 고른 뒤 “답 제출”을 누르세요.',
+  match:'아래 카드를 알맞은 칸으로 <b>끌어다 놓으세요</b>. 터치·키보드: 카드를 선택한 뒤 칸 이름을 누릅니다. 놓은 카드를 다시 누르면 되돌아갑니다.',
+  bin:'아래 카드를 알맞은 칸으로 <b>끌어다 놓으세요</b>. 터치·키보드: 카드를 선택한 뒤 칸 이름을 누릅니다. 놓은 카드를 다시 누르면 되돌아갑니다.'
+};
 function saveQuiz(){ Store.set(KEYS.quiz, quizStore); }
+function prepQuestion(q){
+  const o = Object.assign({}, q);
+  if (q.type === 'mc' || q.type === 'multi') o.order = shuffle(q.opts.map((_,i)=>i));
+  if (q.type === 'match'){ o.targets = q.pairs.map(x=>x[0]); o.chips = q.pairs.map(x=>x[1]); o.key = q.pairs.map((_,i)=>i); o.tOrder = shuffle(o.key); o.max1 = true; }
+  if (q.type === 'bin'){ o.targets = q.bins; o.chips = q.items.map(x=>x[0]); o.key = q.items.map(x=>x[1]); o.tOrder = q.bins.map((_,i)=>i); o.max1 = false; }
+  if (o.chips) o.cOrder = shuffle(o.chips.map((_,i)=>i));
+  return o;
+}
 function startQuiz(retry){
   const pool = retry ? QUIZ_POOL.filter(q => quizStore.wrong.includes(q.id)) : QUIZ_POOL;
   if (!pool.length){ toast('재풀이할 오답이 없습니다'); return; }
-  QZ.list = shuffle(pool).slice(0, retry ? pool.length : 10).map(q => q.type === 'mc'
-    ? Object.assign({}, q, { order: shuffle(q.opts.map((_,i)=>i)) }) : q);
-  Object.assign(QZ, { mode:'run', i:0, score:0, answered:false, wrongNow:[], retry:!!retry });
+  let list;
+  if (retry) list = shuffle(pool);
+  else {   // 형식이 고루 섞이도록 형식마다 1문항을 먼저 뽑고, 나머지는 무작위로 채움
+    const sh = shuffle(pool), picked = [];
+    Object.keys(QZ_TYPE).forEach(t => { const q = sh.find(x => x.type === t); if (q) picked.push(q); });
+    sh.forEach(q => { if (picked.length < 10 && !picked.includes(q)) picked.push(q); });
+    list = shuffle(picked);
+  }
+  QZ.list = list.map(prepQuestion);
+  Object.assign(QZ, { mode:'run', i:0, score:0, answered:false, wrongNow:[], retry:!!retry, pick:null, multi:[], place:{}, sel:null });
   renderQuiz();
 }
 function renderQuizHome(){
   const h = quizStore.history.slice(-10);
+  const cnt = t => QUIZ_POOL.filter(q => q.type === t).length;
   $('#quizBox').innerHTML = `<div class="row" style="align-items:flex-start;gap:18px">
-    <div style="flex:1;min-width:220px"><h3>준비되셨나요?</h3><p class="muted small">문항 풀 ${QUIZ_POOL.length}개 중 10문항을 무작위로 출제합니다. 분류/용어 구분, KCD-9 시행 연도, ICD-11 이행 계획, 코드 매칭 등을 다룹니다.</p>
+    <div style="flex:1;min-width:220px"><h3>준비되셨나요?</h3><p class="muted small">문항 풀 ${QUIZ_POOL.length}개 중 10문항을 무작위로 출제합니다. 형식이 고루 섞이도록 형식마다 1문항 이상 나옵니다.</p>
+      <p class="small" style="margin-top:6px">${Object.keys(QZ_TYPE).map(t => `<span class="type-badge">${QZ_TYPE[t]} ${cnt(t)}</span>`).join(' ')}</p>
       <div class="row" style="margin-top:10px"><button type="button" class="btn primary" id="qzStart">퀴즈 시작</button>
       <button type="button" class="btn" id="qzRetry" ${quizStore.wrong.length?'':'disabled'}>오답 재풀이 (${quizStore.wrong.length})</button>
       <button type="button" class="btn sm" id="qzClear" ${quizStore.history.length||quizStore.wrong.length?'':'disabled'}>기록 초기화</button></div></div>
     <div style="min-width:200px"><div class="small muted">최고 점수</div><div class="score-big">${quizStore.best ?? '—'}<span class="small muted">${quizStore.best!=null?' / 10':''}</span></div>
       ${h.length ? `<div class="small muted" style="margin-top:10px">최근 ${h.length}회 기록</div><div class="hist" aria-label="최근 점수 기록">${h.map(x => `<span style="height:${Math.max(6,(x.score/x.total)*100)}%" title="${esc(x.date)} — ${x.score}/${x.total}${x.retry?' (오답 재풀이)':''}"></span>`).join('')}</div>` : ''}</div></div>`;
 }
-function renderQuiz(){
+/* 문항 형식별 보기 영역 */
+function quizOptsHTML(q){
+  const done = QZ.answered, dis = done ? 'disabled' : '';
+  if (q.type === 'ox') return `<div class="ox" role="group" aria-label="O 또는 X 선택">${['O','X'].map(v => `<button type="button" class="opt ${done ? (v===q.a?'correct':(QZ.pick===v?'incorrect':'')) : ''}" data-ans="${v}" ${dis} aria-label="${v==='O'?'O 맞다':'X 틀리다'}">${v}</button>`).join('')}</div>`;
+  if (q.type === 'mc') return `<div role="group" aria-label="보기">${q.order.map((oi,idx) => `<button type="button" class="opt ${done ? (oi===q.a?'correct':(QZ.pick===oi?'incorrect':'')) : ''}" data-ans="${oi}" ${dis}>${idx+1}. ${esc(q.opts[oi])}</button>`).join('')}</div>`;
+  if (q.type === 'multi') return `<p class="small muted">💡 ${QZ_HINT.multi}</p><div role="group" aria-label="보기 (해당하는 것을 모두 선택)">${q.order.map((oi,idx) => {
+      const on = QZ.multi.includes(oi), right = q.a.includes(oi);
+      const cls = done ? (right ? (on ? 'correct' : 'correct missed') : (on ? 'incorrect' : '')) : '';
+      return `<button type="button" class="opt ${cls}" data-multi="${oi}" aria-pressed="${on}" ${dis}><span aria-hidden="true">${on?'☑':'☐'}</span> ${idx+1}. ${esc(q.opts[oi])}${done && right && !on ? ' <span class="small">(놓친 정답)</span>' : ''}</button>`; }).join('')}</div>
+    ${done ? '' : `<div class="row" style="margin-top:10px"><button type="button" class="btn primary" id="qzSubmit" ${QZ.multi.length?'':'disabled'}>답 제출</button></div>`}`;
+  // match · bin: 카드를 칸에 놓기
+  const chipBtn = ci => { const tg = QZ.place[ci];
+    return `<button type="button" class="qz-chip ${done ? (tg===q.key[ci]?'right':'wrong') : ''}" draggable="${!done}" data-chip="${ci}" aria-pressed="${QZ.sel===ci}" ${dis} aria-label="카드 ${esc(q.chips[ci])}${tg!==undefined && !done ? ', 놓임 — 누르면 되돌림' : ''}">${esc(q.chips[ci])}</button>`; };
+  const pool = q.cOrder.filter(ci => QZ.place[ci] === undefined);
+  return `<p class="small muted">💡 ${QZ_HINT[q.type]}</p>
+    <div class="qz-pool" aria-label="아직 놓지 않은 카드">${pool.map(chipBtn).join('') || '<span class="small muted">카드를 모두 놓았습니다 ✓</span>'}</div>
+    <div class="qz-targets">${q.tOrder.map(ti => { const placed = q.cOrder.filter(ci => QZ.place[ci] === ti);
+      return `<div class="qz-target" data-tg="${ti}"><button type="button" class="tg-btn" data-tgbtn="${ti}" ${dis} aria-label="칸 ${esc(q.targets[ti])}${QZ.sel!==null ? ' — 선택한 카드를 여기에 놓기' : ''}">${esc(q.targets[ti])}</button><div class="drop">${placed.map(chipBtn).join('')}</div></div>`; }).join('')}</div>
+    ${done ? '' : `<div class="row" style="margin-top:10px"><button type="button" class="btn primary" id="qzSubmit" ${pool.length?'disabled':''}>답 제출</button><span class="small muted">${pool.length ? `남은 카드 ${pool.length}장` : ''}</span></div>`}`;
+}
+/* match · bin 오답 시 보여 줄 정답 */
+function quizKeyHTML(q){
+  if (q.type === 'match') return `<div class="small" style="margin-top:6px"><b>정답</b>: ${q.pairs.map(x => `${esc(x[0])} → ${esc(x[1])}`).join(' · ')}</div>`;
+  if (q.type === 'bin') return `<div class="small" style="margin-top:6px"><b>정답</b>: ${q.bins.map((bn,bi) => `${esc(bn)} — ${q.items.filter(x => x[1]===bi).map(x => esc(x[0])).join(', ')}`).join(' / ')}</div>`;
+  return '';
+}
+function renderQuiz(focusSel){
   if (QZ.mode === 'idle') return renderQuizHome();
   if (QZ.mode === 'done'){
     const total = QZ.list.length;
@@ -1500,16 +1601,29 @@ function renderQuiz(){
   }
   const q = QZ.list[QZ.i];
   const n = QZ.list.length;
-  let opts;
-  if (q.type === 'ox') opts = `<div class="ox" role="group" aria-label="O 또는 X 선택">${['O','X'].map(v => `<button type="button" class="opt ${QZ.answered ? (v===q.a?'correct':(QZ.pick===v?'incorrect':'')) : ''}" data-ans="${v}" ${QZ.answered?'disabled':''} aria-label="${v==='O'?'O 맞다':'X 틀리다'}">${v}</button>`).join('')}</div>`;
-  else opts = `<div role="group" aria-label="보기">${q.order.map((oi,idx) => `<button type="button" class="opt ${QZ.answered ? (oi===q.a?'correct':(QZ.pick===oi?'incorrect':'')) : ''}" data-ans="${oi}" ${QZ.answered?'disabled':''}>${idx+1}. ${esc(q.opts[oi])}</button>`).join('')}</div>`;
   const ok = QZ.answered && QZ.lastOk;
   $('#quizBox').innerHTML = `<div class="row small muted"><span>${QZ.retry?'오답 재풀이 · ':''}문항 ${QZ.i+1} / ${n}</span><span class="spacer"></span><span>점수 ${QZ.score}</span></div>
     <div class="quiz-progress" aria-hidden="true"><i style="width:${(QZ.i/n)*100}%"></i></div>
-    <span class="type-badge">${q.type==='ox'?'O/X':'객관식'}</span><p class="q-text">${esc(q.q)}</p>${opts}
-    ${QZ.answered ? `<div class="feedback ${ok?'ok':'no'}" tabindex="-1" id="qzFb">${ok?'✅ 정답입니다.':'❌ 오답입니다.'} ${esc(q.exp)}</div>
+    <span class="type-badge">${QZ_TYPE[q.type]}</span><p class="q-text">${esc(q.q)}</p>${quizOptsHTML(q)}
+    ${QZ.answered ? `<div class="feedback ${ok?'ok':'no'}" tabindex="-1" id="qzFb">${ok?'✅ 정답입니다.':'❌ 오답입니다.'} ${esc(q.exp)}${ok ? '' : quizKeyHTML(q)}</div>
       <div class="row" style="margin-top:10px"><button type="button" class="btn primary" id="qzNext">${QZ.i+1<n?'다음 문항 →':'결과 보기'}</button></div>` : ''}`;
-  if (QZ.answered) { const nx = $('#qzNext'); if (nx) nx.focus(); }
+  const f = QZ.answered ? $('#qzNext') : (focusSel && $(focusSel, $('#quizBox')));
+  if (f) f.focus();
+}
+function quizGrade(ok){
+  const q = QZ.list[QZ.i];
+  QZ.answered = true; QZ.lastOk = ok; QZ.sel = null;
+  if (ok){ QZ.score++; quizStore.wrong = quizStore.wrong.filter(id => id !== q.id); }
+  else { QZ.wrongNow.push(q.id); if (!quizStore.wrong.includes(q.id)) quizStore.wrong.push(q.id); }
+  saveQuiz(); renderQuiz();
+}
+function quizPlace(ci, ti){   // 카드 ci 를 칸 ti 에 놓기 (ti 가 없으면 카드 더미로 되돌림)
+  const q = QZ.list[QZ.i]; if (!q || !q.chips || QZ.answered || !(ci >= 0 && ci < q.chips.length)) return;
+  if (ti === undefined) delete QZ.place[ci];
+  else { if (q.max1) Object.keys(QZ.place).forEach(k => { if (QZ.place[k] === ti) delete QZ.place[k]; }); QZ.place[ci] = ti; }
+  QZ.sel = null;
+  const left = q.cOrder.filter(c => QZ.place[c] === undefined);
+  renderQuiz(left.length ? `.qz-pool [data-chip="${left[0]}"]` : '#qzSubmit');
 }
 $('#quizBox').addEventListener('click', e => {
   const t = e.target.closest('button'); if (!t) return;
@@ -1518,7 +1632,7 @@ $('#quizBox').addEventListener('click', e => {
   if (t.id === 'qzHome'){ QZ.mode = 'idle'; return renderQuiz(); }
   if (t.id === 'qzClear'){ if (window.confirm('퀴즈 점수와 오답 기록을 모두 지울까요?')){ quizStore = clone(QZ_DEFAULT); saveQuiz(); renderQuiz(); } return; }
   if (t.id === 'qzNext'){
-    QZ.i++; QZ.answered = false; QZ.pick = null;
+    QZ.i++; Object.assign(QZ, { answered:false, pick:null, multi:[], place:{}, sel:null });
     if (QZ.i >= QZ.list.length){
       QZ.mode = 'done';
       const date = localStamp();
@@ -1529,14 +1643,45 @@ $('#quizBox').addEventListener('click', e => {
     }
     return renderQuiz();
   }
-  if (t.dataset.ans !== undefined && !QZ.answered){
-    const q = QZ.list[QZ.i];
-    const pick = q.type === 'ox' ? t.dataset.ans : Number(t.dataset.ans);
-    QZ.pick = pick; QZ.answered = true; QZ.lastOk = pick === q.a;
-    if (QZ.lastOk){ QZ.score++; quizStore.wrong = quizStore.wrong.filter(id => id !== q.id); }
-    else { QZ.wrongNow.push(q.id); if (!quizStore.wrong.includes(q.id)) quizStore.wrong.push(q.id); }
-    saveQuiz(); renderQuiz();
+  if (QZ.mode !== 'run' || QZ.answered) return;
+  const q = QZ.list[QZ.i];
+  if (t.dataset.ans !== undefined){
+    QZ.pick = q.type === 'ox' ? t.dataset.ans : Number(t.dataset.ans);
+    return quizGrade(QZ.pick === q.a);
   }
+  if (t.dataset.multi !== undefined){
+    const oi = Number(t.dataset.multi);
+    QZ.multi = QZ.multi.includes(oi) ? QZ.multi.filter(x => x !== oi) : QZ.multi.concat(oi);
+    return renderQuiz(`[data-multi="${oi}"]`);
+  }
+  if (t.dataset.chip !== undefined){
+    const ci = Number(t.dataset.chip);
+    if (QZ.place[ci] !== undefined) return quizPlace(ci);          // 놓은 카드를 누르면 되돌림
+    QZ.sel = QZ.sel === ci ? null : ci;
+    return renderQuiz(`[data-chip="${ci}"]`);
+  }
+  if (t.dataset.tgbtn !== undefined){
+    if (QZ.sel === null){ toast('먼저 카드를 선택하세요'); return; }
+    return quizPlace(QZ.sel, Number(t.dataset.tgbtn));
+  }
+  if (t.id === 'qzSubmit'){
+    if (q.type === 'multi') return quizGrade(QZ.multi.length === q.a.length && q.a.every(x => QZ.multi.includes(x)));
+    return quizGrade(q.chips.every((_, ci) => QZ.place[ci] === q.key[ci]));
+  }
+});
+/* 끌어다 놓기 (마우스) */
+$('#quizBox').addEventListener('dragstart', e => {
+  const c = e.target.closest && e.target.closest('.qz-chip'); if (!c || QZ.answered) return;
+  try { e.dataTransfer.setData('text/plain', 'qz:' + c.dataset.chip); e.dataTransfer.effectAllowed = 'move'; } catch(err) {}
+});
+$('#quizBox').addEventListener('dragover', e => { const z = e.target.closest && e.target.closest('.qz-target,.qz-pool'); if (z && !QZ.answered){ e.preventDefault(); z.classList.add('over'); } });
+$('#quizBox').addEventListener('dragleave', e => { const z = e.target.closest && e.target.closest('.qz-target,.qz-pool'); if (z) z.classList.remove('over'); });
+$('#quizBox').addEventListener('drop', e => {
+  const z = e.target.closest && e.target.closest('.qz-target,.qz-pool'); if (!z) return;
+  e.preventDefault(); z.classList.remove('over');
+  let d = ''; try { d = e.dataTransfer.getData('text/plain'); } catch(err) {}
+  if (!/^qz:\d+$/.test(d)) return;
+  quizPlace(Number(d.slice(3)), z.classList.contains('qz-target') ? Number(z.dataset.tg) : undefined);
 });
 renderers.quiz = () => { if (QZ.mode === 'idle') renderQuiz(); };
 
@@ -1710,7 +1855,7 @@ function renderVerify(){
     <div class="v-guide">
       <div><b>① 과제 고르기</b><ol><li>“무작위 5개 배정”으로 과제를 받거나 전체 목록에서 고릅니다.</li><li>앱 제안값을 먼저 읽습니다.</li></ol></div>
       <div><b>② 공식 원본과 대조</b><ol><li>각 카드의 “확인 방법 · 공식 원본”을 펼쳐 원본을 엽니다.</li><li>일치·불일치·찾지 못함 중 하나로 판정합니다.</li><li>불일치면 원본의 올바른 값을 그대로 적습니다.</li></ol></div>
-      <div><b>③ 근거 남기고 제출</b><ol><li>근거 칸에 출처·화면·버전을 적습니다.</li><li>JSON·CSV·문서(.docx) 중 교수자가 지정한 형식으로 내보내 제출합니다.</li><li>문서 파일은 Google 드라이브에 올리면 Google 문서로 열립니다.</li></ol></div>
+      <div><b>③ 근거 남기고 제출</b><ol><li>근거 칸에 출처·화면·버전을 적습니다.</li><li>제출자의 반·학번·이름을 입력합니다.</li><li>JSON, CSV(엑셀), 문서(Google 문서·Word) 중 교수자가 지정한 형식으로 내보내 제출합니다.</li><li>문서 파일은 Google 드라이브에 올리면 Google 문서로 열립니다.</li></ol></div>
     </div>
     <p class="insight small">⚖️ <b>원칙</b>: 블로그·요약 자료·AI 답변이 아니라 <b>관리기관의 공식 원본</b>에서 확인합니다. 찾지 못했다면 추측하지 말고 “찾지 못함”으로 남기세요. 그것도 정직한 검증 결과입니다.</p>
   </div>
